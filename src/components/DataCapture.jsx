@@ -1416,7 +1416,13 @@ function DataCapture() {
               />
             </FormGroup>
             <FormGroup>
-              <label>ID / Passport No</label>
+              <label>
+                ID / Passport No
+                {formData.ageCategory !== "Stillborn" &&
+                  formData.ageCategory !== "Infant"
+                  ? ""
+                  : " (Optional)"}
+              </label>
               <input
                 name="idPassportNo"
                 value={formData.idPassportNo}
@@ -1604,6 +1610,12 @@ function DataCapture() {
             </span>
             Burial Permit Details (Government Issued)
           </SectionTitle>
+          {(formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant") && (
+            <HelperText style={{ marginBottom: "16px", padding: "12px", backgroundColor: "#fef3c7", borderRadius: "6px", color: "#92400e" }}>
+              <MdInfoOutline size={14} style={{ marginRight: "4px", flexShrink: 0 }} />
+              Burial permit details are not required for Stillborn and Infant cases. These fields are disabled.
+            </HelperText>
+          )}
           <FormGrid>
             <FormGroup>
               <label>Burial Permit Number *</label>
@@ -1612,6 +1624,8 @@ function DataCapture() {
                 value={formData.burialPermitNumber}
                 onChange={handleChange}
                 placeholder="Enter permit number"
+                disabled={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant"}
+                style={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant" ? { backgroundColor: "#f3f4f6", cursor: "not-allowed", opacity: 0.6 } : {}}
                 required
               />
             </FormGroup>
@@ -1622,6 +1636,7 @@ function DataCapture() {
                 onChange={handleChange}
                 name="burialPermitDate"
                 placeholder="Pick permit date"
+                disabled={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant"}
                 required
               />
             </FormGroup>
@@ -1632,6 +1647,8 @@ function DataCapture() {
                 value={formData.burialPermitIssuedBy}
                 onChange={handleChange}
                 placeholder="Enter issuer name/authority"
+                disabled={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant"}
+                style={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant" ? { backgroundColor: "#f3f4f6", cursor: "not-allowed", opacity: 0.6 } : {}}
                 required
               />
             </FormGroup>
@@ -1642,6 +1659,8 @@ function DataCapture() {
                 value={formData.burialPermitIssuedByContact}
                 onChange={handleChange}
                 placeholder="Enter issuer contact details"
+                disabled={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant"}
+                style={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant" ? { backgroundColor: "#f3f4f6", cursor: "not-allowed", opacity: 0.6 } : {}}
                 required
               />
             </FormGroup>
@@ -1652,6 +1671,8 @@ function DataCapture() {
                 value={formData.burialPermitIssuedTo}
                 onChange={handleChange}
                 placeholder="Enter recipient name"
+                disabled={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant"}
+                style={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant" ? { backgroundColor: "#f3f4f6", cursor: "not-allowed", opacity: 0.6 } : {}}
                 required
               />
             </FormGroup>
@@ -1663,6 +1684,8 @@ function DataCapture() {
                 value={formData.burialPermitIssuedToContact}
                 onChange={handleChange}
                 placeholder="Enter recipient contact"
+                disabled={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant"}
+                style={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant" ? { backgroundColor: "#f3f4f6", cursor: "not-allowed", opacity: 0.6 } : {}}
                 required
               />
             </FormGroup>
