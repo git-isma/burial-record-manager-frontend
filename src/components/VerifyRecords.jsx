@@ -345,7 +345,7 @@ function VerifyRecords() {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, total: 0 });
-  
+
   // Modal States
   const [verifyModal, setVerifyModal] = useState({ isOpen: false, recordId: null, recordName: '' });
   const [rejectModal, setRejectModal] = useState({ isOpen: false, recordId: null, recordName: '' });
@@ -361,14 +361,14 @@ function VerifyRecords() {
       // Assuming GET /public-records?status=Pending is what we want
       const params = { page: pagination.currentPage, limit: 10, status: 'Pending' };
       const res = await apiService.getPublicRecords(params);
-      
+
       if (res.data.success) {
         setRecords(res.data.data || []);
         const paging = res.data.pagination || {};
-        setPagination({ 
-          currentPage: paging.currentPage || 1, 
-          totalPages: paging.totalPages || 1, 
-          total: paging.total || 0 
+        setPagination({
+          currentPage: paging.currentPage || 1,
+          totalPages: paging.totalPages || 1,
+          total: paging.total || 0
         });
       } else {
         setRecords([]);
@@ -376,25 +376,25 @@ function VerifyRecords() {
     } catch (err) {
       console.error('Error fetching public records:', err);
       // Fallback or empty state if API fails (e.g., pending backend implementation)
-      setRecords([]); 
+      setRecords([]);
     } finally {
       setLoading(false);
     }
   };
 
   const handleVerifyClick = (record) => {
-    setVerifyModal({ 
-      isOpen: true, 
-      recordId: record._id, 
-      recordName: `${record.firstName} ${record.lastName}` 
+    setVerifyModal({
+      isOpen: true,
+      recordId: record._id,
+      recordName: `${record.firstName} ${record.lastName}`
     });
   };
 
   const handleRejectClick = (record) => {
-    setRejectModal({ 
-      isOpen: true, 
-      recordId: record._id, 
-      recordName: `${record.firstName} ${record.lastName}` 
+    setRejectModal({
+      isOpen: true,
+      recordId: record._id,
+      recordName: `${record.firstName} ${record.lastName}`
     });
     setRejectionReason('');
   };
@@ -402,23 +402,23 @@ function VerifyRecords() {
   const handleViewClick = async (record) => {
     setViewModal({ isOpen: true, record: record }); // Show list data initially
     try {
-        const res = await apiService.getPublicRecord(record._id);
-        // Handle both { success: true, data: {...} } and direct object response
-        let recordData = res.data.success === true ? res.data.data : res.data;
-        
-        // If it's an array (from list endpoint filtering), take the first item
-        if (Array.isArray(recordData) && recordData.length > 0) {
-            recordData = recordData[0];
-        } else if (recordData && recordData.docs && Array.isArray(recordData.docs)) {
-            // Handle valid mongoose-paginate response if applicable
-             recordData = recordData.docs[0];
-        }
-        
-        if (recordData && recordData._id) {
-            setViewModal(prev => ({ ...prev, record: recordData }));
-        }
-    } catch(err) {
-        console.error("Failed to fetch details", err);
+      const res = await apiService.getPublicRecord(record._id);
+      // Handle both { success: true, data: {...} } and direct object response
+      let recordData = res.data.success === true ? res.data.data : res.data;
+
+      // If it's an array (from list endpoint filtering), take the first item
+      if (Array.isArray(recordData) && recordData.length > 0) {
+        recordData = recordData[0];
+      } else if (recordData && recordData.docs && Array.isArray(recordData.docs)) {
+        // Handle valid mongoose-paginate response if applicable
+        recordData = recordData.docs[0];
+      }
+
+      if (recordData && recordData._id) {
+        setViewModal(prev => ({ ...prev, record: recordData }));
+      }
+    } catch (err) {
+      console.error("Failed to fetch details", err);
     }
   };
 
@@ -443,9 +443,9 @@ function VerifyRecords() {
     }
     setProcessing(true);
     try {
-      const res = await apiService.verifyPublicRecord(rejectModal.recordId, { 
-        status: 'Rejected', 
-        rejectionReason 
+      const res = await apiService.verifyPublicRecord(rejectModal.recordId, {
+        status: 'Rejected',
+        rejectionReason
       });
       showToast(res.data.message || 'Record rejected', 'info');
       setRejectModal({ isOpen: false, recordId: null, recordName: '' });
@@ -484,6 +484,7 @@ function VerifyRecords() {
                 <thead>
                   <tr>
                     <th>Submitted Date</th>
+                    <th>Applicant ID</th>
                     <th>Name</th>
                     <th>Date of Death</th>
                     <th>Burial Location</th>
@@ -496,6 +497,7 @@ function VerifyRecords() {
                   {records.map(record => (
                     <tr key={record._id}>
                       <td>{formatDate(record.createdAt)}</td>
+                      <td>{record.applicantId || 'N/A'}</td>
                       <td>{`${record.firstName} ${record.middleName || ''} ${record.lastName}`}</td>
                       <td>{formatDate(record.dateOfDeath)}</td>
                       <td>{record.burialLocation}</td>
@@ -507,9 +509,9 @@ function VerifyRecords() {
                       </td> */}
                       <td>
                         <div style={{ display: 'flex', gap: '8px' }}>
-                          <ActionButton 
-                            className="view" 
-                            title="View Details" 
+                          <ActionButton
+                            className="view"
+                            title="View Details"
                             onClick={() => handleViewClick(record)}
                           >
                             <MdVisibility />
@@ -552,7 +554,7 @@ function VerifyRecords() {
       >
         <div style={{ padding: '0 4px' }}>
           <p style={{ marginBottom: '12px', color: theme.colors.gray700 }}>
-            Please provide a reason for rejecting the record for <strong>{rejectModal.recordName}</strong>. 
+            Please provide a reason for rejecting the record for <strong>{rejectModal.recordName}</strong>.
             This will be sent to the applicant.
           </p>
           <TextArea
@@ -597,177 +599,181 @@ function VerifyRecords() {
 
       {/* View Details Modal */}
       <Modal
-          isOpen={viewModal.isOpen}
-          onClose={() => setViewModal({ isOpen: false, record: null })}
-          title="Record Details"
-          maxWidth="800px"
-          footer={
-            <div style={{ display: 'flex', gap: '12px', width: '100%', justifyContent: 'flex-end' }}>
-               <Button
-                  $variant="secondary"
-                  onClick={() => setViewModal({ isOpen: false, record: null })}
+        isOpen={viewModal.isOpen}
+        onClose={() => setViewModal({ isOpen: false, record: null })}
+        title="Record Details"
+        maxWidth="800px"
+        footer={
+          <div style={{ display: 'flex', gap: '12px', width: '100%', justifyContent: 'flex-end' }}>
+            <Button
+              $variant="secondary"
+              onClick={() => setViewModal({ isOpen: false, record: null })}
+            >
+              Close
+            </Button>
+            {viewModal.record && (
+              <>
+                <Button
+                  $variant="danger"
+                  onClick={() => {
+                    const rec = viewModal.record;
+                    setViewModal({ isOpen: false, record: null });
+                    handleRejectClick(rec);
+                  }}
                 >
-                  Close
+                  Reject
                 </Button>
-               {viewModal.record && (
-                 <>
-                    <Button
-                      $variant="danger"
-                      onClick={() => {
-                        const rec = viewModal.record;
-                        setViewModal({ isOpen: false, record: null });
-                        handleRejectClick(rec);
-                      }}
-                    >
-                      Reject
-                    </Button>
-                    <Button
-                      $variant="success"
-                      onClick={() => {
-                         const rec = viewModal.record;
-                         setViewModal({ isOpen: false, record: null });
-                         handleVerifyClick(rec);
-                      }}
-                    >
-                      Verify
-                    </Button>
-                 </>
-               )}
-            </div>
-          }
-        >
-          {viewModal.record ? (
-            <div style={{ padding: '0 8px' }}>
-              <SectionTitle>Deceased Information</SectionTitle>
-              <ViewGrid>
-                <ViewItem>
-                  <ViewLabel>Full Name</ViewLabel>
-                  <ViewValue>{`${viewModal.record.firstName} ${viewModal.record.lastName}`}</ViewValue>
-                </ViewItem>
-                <ViewItem>
-                  <ViewLabel>Gender</ViewLabel>
-                  <ViewValue>{viewModal.record.gender || 'N/A'}</ViewValue>
-                </ViewItem>
-                <ViewItem>
-                  <ViewLabel>Age</ViewLabel>
-                  <ViewValue>{viewModal.record.age ? `${viewModal.record.age} (${viewModal.record.ageCategory})` : 'N/A'}</ViewValue>
-                </ViewItem>
-                <ViewItem>
-                  <ViewLabel>Date of Death</ViewLabel>
-                  <ViewValue>{formatDate(viewModal.record.dateOfDeath)}</ViewValue>
-                </ViewItem>
-                <ViewItem>
-                  <ViewLabel>Burial Location</ViewLabel>
-                  <ViewValue>{viewModal.record.burialLocation || 'N/A'}</ViewValue>
-                </ViewItem>
-              </ViewGrid>
-              
-              <SectionTitle>Next of Kin Details</SectionTitle>
-              <ViewGrid>
-                <ViewItem>
-                  <ViewLabel>Name</ViewLabel>
-                  <ViewValue>{viewModal.record.nextOfKinName || 'N/A'}</ViewValue>
-                </ViewItem>
-                <ViewItem>
-                  <ViewLabel>Contact</ViewLabel>
-                  <ViewValue>{viewModal.record.nextOfKinContact || 'N/A'}</ViewValue>
-                </ViewItem>
-              </ViewGrid>
+                <Button
+                  $variant="success"
+                  onClick={() => {
+                    const rec = viewModal.record;
+                    setViewModal({ isOpen: false, record: null });
+                    handleVerifyClick(rec);
+                  }}
+                >
+                  Verify
+                </Button>
+              </>
+            )}
+          </div>
+        }
+      >
+        {viewModal.record ? (
+          <div style={{ padding: '0 8px' }}>
+            <SectionTitle>Deceased Information</SectionTitle>
+            <ViewGrid>
+              <ViewItem>
+                <ViewLabel>Full Name</ViewLabel>
+                <ViewValue>{`${viewModal.record.firstName} ${viewModal.record.lastName}`}</ViewValue>
+              </ViewItem>
+              <ViewItem>
+                <ViewLabel>Gender</ViewLabel>
+                <ViewValue>{viewModal.record.gender || 'N/A'}</ViewValue>
+              </ViewItem>
+              <ViewItem>
+                <ViewLabel>Age</ViewLabel>
+                <ViewValue>{viewModal.record.age ? `${viewModal.record.age} (${viewModal.record.ageCategory})` : 'N/A'}</ViewValue>
+              </ViewItem>
+              <ViewItem>
+                <ViewLabel>Date of Death</ViewLabel>
+                <ViewValue>{formatDate(viewModal.record.dateOfDeath)}</ViewValue>
+              </ViewItem>
+              <ViewItem>
+                <ViewLabel>Burial Location</ViewLabel>
+                <ViewValue>{viewModal.record.burialLocation || 'N/A'}</ViewValue>
+              </ViewItem>
+            </ViewGrid>
 
-              <SectionTitle>Services & Payment</SectionTitle>
-              <ViewGrid>
-                <ViewItem>
-                  <ViewLabel>Primary Service</ViewLabel>
-                  <ViewValue>{viewModal.record.primaryService || 'N/A'}</ViewValue>
-                </ViewItem>
-                <ViewItem>
-                  <ViewLabel>Primary Amount</ViewLabel>
-                  <ViewValue>{viewModal.record.amountPaidBurial ? `KES ${viewModal.record.amountPaidBurial.toLocaleString()}` : '0'}</ViewValue>
-                </ViewItem>
-                
-                {viewModal.record.secondaryService && viewModal.record.secondaryService !== 'None' && (
-                  <>
-                    <ViewItem>
-                        <ViewLabel>Secondary Service</ViewLabel>
-                        <ViewValue>{viewModal.record.secondaryService}</ViewValue>
-                    </ViewItem>
-                    <ViewItem>
-                        <ViewLabel>Secondary Amount</ViewLabel>
-                        <ViewValue>{viewModal.record.amountPaidSecondary ? `KES ${viewModal.record.amountPaidSecondary.toLocaleString()}` : '0'}</ViewValue>
-                    </ViewItem>
-                  </>
-                )}
-                
-                 {viewModal.record.tertiaryService && viewModal.record.tertiaryService !== 'None' && (
-                  <>
-                    <ViewItem>
-                        <ViewLabel>Tertiary Service</ViewLabel>
-                        <ViewValue>{viewModal.record.tertiaryService}</ViewValue>
-                    </ViewItem>
-                    <ViewItem>
-                        <ViewLabel>Tertiary Amount</ViewLabel>
-                        <ViewValue>{viewModal.record.amountPaidTertiary ? `KES ${viewModal.record.amountPaidTertiary.toLocaleString()}` : '0'}</ViewValue>
-                    </ViewItem>
-                  </>
-                )}
-                
-                 <ViewItem>
-                  <ViewLabel>M-Pesa Ref No</ViewLabel>
-                  <ViewValue>{viewModal.record.mpesaRefNo || 'N/A'}</ViewValue>
-                </ViewItem>
-                <ViewItem>
-                  <ViewLabel>Receipt No</ViewLabel>
-                  <ViewValue>{viewModal.record.receiptNo || 'N/A'}</ViewValue>
-                </ViewItem>
-              </ViewGrid>
+            <SectionTitle>Next of Kin Details</SectionTitle>
+            <ViewGrid>
+              <ViewItem>
+                <ViewLabel>Name</ViewLabel>
+                <ViewValue>{viewModal.record.nextOfKinName || 'N/A'}</ViewValue>
+              </ViewItem>
+              <ViewItem>
+                <ViewLabel>Contact</ViewLabel>
+                <ViewValue>{viewModal.record.nextOfKinContact || 'N/A'}</ViewValue>
+              </ViewItem>
+            </ViewGrid>
 
-              <SectionTitle>Submission Info</SectionTitle>
-               <ViewGrid>
-                <ViewItem>
-                  <ViewLabel>Submitted On</ViewLabel>
-                  <ViewValue>{formatDate(viewModal.record.createdAt)}</ViewValue>
-                </ViewItem>
-              </ViewGrid>
-  
-              <SectionTitle>Attachments</SectionTitle>
-              {viewModal.record.attachments && viewModal.record.attachments.length > 0 ? (
-                <AttachmentGrid>
-                  {viewModal.record.attachments.map((att, index) => {
-                      // Handle both new structure (filename, path) and potential old structure (name, url)
-                      const attachmentUrl = att.path || att.url;
-                      const attachmentName = att.filename || att.name || `Attachment ${index + 1}`;
-                      // Check extension for image
-                      const isImage = attachmentUrl?.match(/\.(jpeg|jpg|gif|png|webp)$/i) || (att.type && att.type.startsWith('image/'));
+            <SectionTitle>Services & Payment</SectionTitle>
+            <ViewGrid>
+              <ViewItem>
+                <ViewLabel>Primary Service</ViewLabel>
+                <ViewValue>{viewModal.record.primaryService || 'N/A'}</ViewValue>
+              </ViewItem>
+              <ViewItem>
+                <ViewLabel>Primary Amount</ViewLabel>
+                <ViewValue>{viewModal.record.amountPaidBurial ? `KES ${viewModal.record.amountPaidBurial.toLocaleString()}` : '0'}</ViewValue>
+              </ViewItem>
 
-                      return (
-                        <AttachmentCard key={index} onClick={() => window.open(attachmentUrl, '_blank')} style={{ cursor: 'pointer' }}>
-                        <AttachmentPreview>
-                            {isImage ? (
-                            <img src={attachmentUrl} alt="Attachment" />
-                            ) : (
-                            <MdDescription size={48} color={theme.colors.primarySolid} />
-                            )}
-                        </AttachmentPreview>
-                        <AttachmentMeta>
-                            <div className="name" title={attachmentName}>{attachmentName}</div>
-                            <div className="type">{isImage ? 'Image' : 'Document'}</div>
-                        </AttachmentMeta>
-                        </AttachmentCard>
-                    );
-                  })}
-                </AttachmentGrid>
-              ) : (
-                <div style={{ padding: '24px', textAlign: 'center', color: theme.colors.gray500, background: theme.colors.gray50, borderRadius: theme.borderRadius.md, border: `1px dashed ${theme.colors.gray300}` }}>
-                  No attachments available for this record.
-                </div>
+              {viewModal.record.secondaryService && viewModal.record.secondaryService !== 'None' && (
+                <>
+                  <ViewItem>
+                    <ViewLabel>Secondary Service</ViewLabel>
+                    <ViewValue>{viewModal.record.secondaryService}</ViewValue>
+                  </ViewItem>
+                  <ViewItem>
+                    <ViewLabel>Secondary Amount</ViewLabel>
+                    <ViewValue>{viewModal.record.amountPaidSecondary ? `KES ${viewModal.record.amountPaidSecondary.toLocaleString()}` : '0'}</ViewValue>
+                  </ViewItem>
+                </>
               )}
-            </div>
-          ) : (
-            <div style={{ padding: '40px', textAlign: 'center', color: theme.colors.gray500 }}>
-              Searching records...
-            </div>
-          )}
-        </Modal>
+
+              {viewModal.record.tertiaryService && viewModal.record.tertiaryService !== 'None' && (
+                <>
+                  <ViewItem>
+                    <ViewLabel>Tertiary Service</ViewLabel>
+                    <ViewValue>{viewModal.record.tertiaryService}</ViewValue>
+                  </ViewItem>
+                  <ViewItem>
+                    <ViewLabel>Tertiary Amount</ViewLabel>
+                    <ViewValue>{viewModal.record.amountPaidTertiary ? `KES ${viewModal.record.amountPaidTertiary.toLocaleString()}` : '0'}</ViewValue>
+                  </ViewItem>
+                </>
+              )}
+
+              <ViewItem>
+                <ViewLabel>M-Pesa Ref No</ViewLabel>
+                <ViewValue>{viewModal.record.mpesaRefNo || 'N/A'}</ViewValue>
+              </ViewItem>
+              <ViewItem>
+                <ViewLabel>Receipt No</ViewLabel>
+                <ViewValue>{viewModal.record.receiptNo || 'N/A'}</ViewValue>
+              </ViewItem>
+            </ViewGrid>
+
+            <SectionTitle>Submission Info</SectionTitle>
+            <ViewGrid>
+              <ViewItem>
+                <ViewLabel>Applicant ID</ViewLabel>
+                <ViewValue>{viewModal.record.applicantId || 'N/A'}</ViewValue>
+              </ViewItem>
+              <ViewItem>
+                <ViewLabel>Submitted On</ViewLabel>
+                <ViewValue>{formatDate(viewModal.record.createdAt)}</ViewValue>
+              </ViewItem>
+            </ViewGrid>
+
+            <SectionTitle>Attachments</SectionTitle>
+            {viewModal.record.attachments && viewModal.record.attachments.length > 0 ? (
+              <AttachmentGrid>
+                {viewModal.record.attachments.map((att, index) => {
+                  // Handle both new structure (filename, path) and potential old structure (name, url)
+                  const attachmentUrl = att.path || att.url;
+                  const attachmentName = att.filename || att.name || `Attachment ${index + 1}`;
+                  // Check extension for image
+                  const isImage = attachmentUrl?.match(/\.(jpeg|jpg|gif|png|webp)$/i) || (att.type && att.type.startsWith('image/'));
+
+                  return (
+                    <AttachmentCard key={index} onClick={() => window.open(attachmentUrl, '_blank')} style={{ cursor: 'pointer' }}>
+                      <AttachmentPreview>
+                        {isImage ? (
+                          <img src={attachmentUrl} alt="Attachment" />
+                        ) : (
+                          <MdDescription size={48} color={theme.colors.primarySolid} />
+                        )}
+                      </AttachmentPreview>
+                      <AttachmentMeta>
+                        <div className="name" title={attachmentName}>{attachmentName}</div>
+                        <div className="type">{isImage ? 'Image' : 'Document'}</div>
+                      </AttachmentMeta>
+                    </AttachmentCard>
+                  );
+                })}
+              </AttachmentGrid>
+            ) : (
+              <div style={{ padding: '24px', textAlign: 'center', color: theme.colors.gray500, background: theme.colors.gray50, borderRadius: theme.borderRadius.md, border: `1px dashed ${theme.colors.gray300}` }}>
+                No attachments available for this record.
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{ padding: '40px', textAlign: 'center', color: theme.colors.gray500 }}>
+            Searching records...
+          </div>
+        )}
+      </Modal>
 
     </RecordsContainer>
   );

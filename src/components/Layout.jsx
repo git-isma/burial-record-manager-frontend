@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { theme } from '../styles/theme';
 import ProfileMenu from './ProfileMenu';
 import NotificationMenu from './NotificationMenu';
+import ismaLogo from '../assets/ISMA-logo.png';
 import ScrollToTop from './ScrollToTop';
 import { useSettings } from '../contexts/SettingsContext';
 import { MdDashboard, MdEdit, MdFolder, MdBarChart, MdPeople, MdSettings, MdLocationOn, MdLogout, MdVerified, MdLightMode, MdDarkMode } from 'react-icons/md';
@@ -96,27 +97,57 @@ const SidebarHeader = styled.div`
     border-right-color: #404040;
   }
 
-  h2 {
-    font-size: 16px;
-    font-weight: 700;
-    margin: 0;
-    color: ${theme.colors.gray900};
-    font-family: ${theme.fonts.body};
-    white-space: nowrap;
-
-    body.dark-theme & {
-      color: #e5e5e5;
-    }
-  }
-
   @media (min-width: 768px) {
     display: block;
-    padding: 24px 20px;
+    padding: 24px 16px;
     border-right: none;
     border-bottom: 1px solid ${theme.colors.gray200};
 
-    h2 {
-      font-size: 18px;
+    .logo-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 16px;
+      
+      img {
+        width: 70px;
+        height: 70px;
+        object-fit: contain;
+        background: white;
+        border-radius: 12px;
+        padding: 4px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      }
+
+      .brand-text {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+
+        h2 {
+          font-size: 18px;
+          font-weight: 900;
+          color: #6366f1; /* Vibrant blue/purple */
+          margin: 0;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        p {
+          font-size: 11px;
+          font-weight: 700;
+          color: #64748b;
+          margin: 0;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+
+          body.dark-theme & {
+            color: #94a3b8;
+          }
+        }
+      }
     }
   }
 `;
@@ -368,6 +399,7 @@ const MainContent = styled.main`
   }
 `;
 
+
 const TopHeader = styled.div`
   background: white;
   padding: 12px 16px;
@@ -392,6 +424,12 @@ const TopHeader = styled.div`
 
   @media print {
     display: none !important;
+  }
+
+  .mobile-only-logo {
+    @media (min-width: 768px) {
+      display: none !important;
+    }
   }
 `;
 
@@ -489,7 +527,13 @@ function Layout({ user, onLogout }) {
     <LayoutContainer>
       <Sidebar>
         <SidebarHeader>
-          <h2>Burial Record Manager</h2>
+          <div className="logo-container">
+            <img src={ismaLogo} alt="Logo" />
+            <div className="brand-text">
+              <h2>BURIAL RECORDS</h2>
+              <p>ISMA OFFICIAL SYSTEM</p>
+            </div>
+          </div>
         </SidebarHeader>
 
         <NavSection>
@@ -558,7 +602,10 @@ function Layout({ user, onLogout }) {
 
       <MainContent>
         <TopHeader>
-          <HeaderTitle>Burial Record Manager</HeaderTitle>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <img src={ismaLogo} alt="Logo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} className="mobile-only-logo" />
+            <HeaderTitle>Burial Record Manager</HeaderTitle>
+          </div>
           <UserSection>
             <HeaderActionButton onClick={toggleTheme} title={getThemeTitle()}>
               {getThemeIcon()}

@@ -26,6 +26,7 @@ import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
 import { useToast } from '../contexts/ToastContext';
 import { useSettings } from '../contexts/SettingsContext';
+import ismaLogo from '../assets/ISMA-logo.png';
 import Spinner from './Spinner';
 import EmptyState from './EmptyState';
 
@@ -109,23 +110,41 @@ const PrintHeader = styled.div`
   display: none;
   
   @media print {
-    display: block;
-    text-align: center;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
     margin-bottom: 30px;
     border-bottom: 2px solid ${theme.colors.primary};
-    padding-bottom: 20px;
+    padding-bottom: 24px;
+
+    .print-logo {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+    }
+
+    .header-text {
+      text-align: left;
+    }
 
     h1 {
-      font-size: 24px;
-      color: ${theme.colors.primary};
-      margin: 0 0 8px 0;
-      text-transform: uppercase;
+      font-size: 28px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+      line-height: 1.1;
+      text-transform: none;
     }
     
-    p {
+    .report-info {
       font-size: 14px;
-      color: #666;
-      margin: 0;
+      color: #64748b;
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
   }
 `;
@@ -672,9 +691,21 @@ function Reports() {
       const pageHeight = pdf.internal.pageSize.getHeight();
       let yPosition = 10;
 
-      // Add title
-      pdf.setFontSize(18);
+      // Add Title Header (Logo Left, Text Right)
+      pdf.addImage(ismaLogo, 'PNG', 15, 8, 25, 25);
+      
+      pdf.setTextColor(15, 23, 42); // #0f172a
+      pdf.setFontSize(22);
       pdf.setFont('helvetica', 'bold');
+      pdf.text('Islamia School &', 45, 18);
+      pdf.text('Mosque Association', 45, 28);
+
+      yPosition = 40;
+
+      // Add Report Details (Centered below the header)
+      pdf.setTextColor(100, 116, 139); // #64748b
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
       pdf.text(`${filters.reportType} Burial Record Report`, pageWidth / 2, yPosition, { align: 'center' });
       yPosition += 8;
 
@@ -788,6 +819,7 @@ function Reports() {
 
       // Stats sheet
       const statsData = [
+        ['Islamia School & Mosque Association'],
         [`${filters.reportType} Burial Record Report`],
         ['Generated:', formatDate(new Date())],
         [],
@@ -891,6 +923,7 @@ function Reports() {
       if (filters.reportType === 'Summary') {
         const headers = ['Metric', 'Value'];
         const rows = [
+          ['Organization', 'Islamia School & Mosque Association'],
           ['Report Type', 'Summary'],
           ['Generated Date', formatDate(new Date())],
           ['Total Records', stats.totalRecords || 0],
@@ -984,8 +1017,14 @@ Status: ${record.status}
   return (
     <ReportsContainer>
       <PrintHeader>
-        <h1>{filters.reportType} Burial Record Report</h1>
-        <p>Generated on: {formatDate(new Date())}</p>
+        <img src={ismaLogo} alt="ISMA Logo" className="print-logo" />
+        <div className="header-text">
+          <h1>Islamia School &<br />Mosque Association</h1>
+          <div className="report-info">
+            <span style={{ fontWeight: 600 }}>{filters.reportType} Burial Record Report</span>
+            <span>Generated on: {formatDate(new Date())}</span>
+          </div>
+        </div>
       </PrintHeader>
 
       <PageHeader>
@@ -1274,7 +1313,7 @@ Status: ${record.status}
       )}
 
       <div style={{ textAlign: 'center', padding: '24px', color: isDarkMode ? '#6d6d6d' : theme.colors.gray500, fontSize: '12px' }}>
-        © 2025 Burial Record Manager. All rights reserved.
+        © 2025 Burial Record Manager by Islamia School & Mosque Association. All rights reserved.
       </div>
 
 
