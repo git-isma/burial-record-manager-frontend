@@ -518,6 +518,54 @@ const SubmitSection = styled.div`
   }
 `;
 
+const TermsContainer = styled.div`
+  margin: ${theme.spacing.xl} 0;
+  padding: ${theme.spacing.lg};
+  background: #f8fafc;
+  border: 1px solid ${theme.colors.gray200};
+  border-radius: ${theme.borderRadius.lg};
+  display: flex;
+  align-items: flex-start;
+  gap: ${theme.spacing.md};
+  transition: all ${theme.transitions.base};
+
+  body.dark-theme & {
+    background: #1e1e1e;
+    border-color: #333;
+  }
+
+  &:hover {
+    border-color: ${theme.colors.primaryLight};
+  }
+
+  input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+    cursor: pointer;
+    accent-color: ${theme.colors.primarySolid};
+  }
+
+  label {
+    font-size: 14px;
+    line-height: 1.5;
+    color: ${theme.colors.gray700};
+    cursor: pointer;
+    user-select: none;
+
+    body.dark-theme & {
+      color: #ccc;
+    }
+
+    strong {
+      color: ${theme.colors.textPrimary};
+      body.dark-theme & {
+        color: #fff;
+      }
+    }
+  }
+`;
+
 const AutoSaveIndicator = styled.div`
   display: flex;
   align-items: center;
@@ -540,7 +588,7 @@ const AutoSaveIndicator = styled.div`
 
   svg {
     animation: ${(props) =>
-      props.$saving ? "spin 1s linear infinite" : "none"};
+    props.$saving ? "spin 1s linear infinite" : "none"};
   }
 
   @keyframes spin {
@@ -578,6 +626,7 @@ function DataCapture() {
     gender: "Male",
     age: "",
     ageCategory: "",
+    nationality: "",
     dateOfDeath: getCurrentDate(),
     nextOfKinName: "",
     nextOfKinContact: "",
@@ -604,6 +653,7 @@ function DataCapture() {
   });
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState(""); // '', 'saving', 'saved'
   const [existingAttachments, setExistingAttachments] = useState([]);
   const [user, setUser] = useState(null);
@@ -617,6 +667,67 @@ function DataCapture() {
   const [newLocationName, setNewLocationName] = useState("");
   const [showManageModal, setShowManageModal] = useState(false);
   const [locationData, setLocationData] = useState([]); // Array of objects {id, name}
+
+  // Countries list
+  const countries = [
+    "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Argentina", "Armenia", "Australia",
+    "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium",
+    "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei",
+    "Bulgaria", "Burkina Faso", "Burundi", "Cambodia", "Cameroon", "Canada", "Cape Verde", "Central African Republic",
+    "Chad", "Chile", "China", "Colombia", "Comoros", "Congo", "Costa Rica", "Croatia", "Cuba", "Cyprus",
+    "Czech Republic", "Czechia", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "East Timor", "Ecuador",
+    "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji",
+    "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala",
+    "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran",
+    "Iraq", "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati",
+    "Kosovo", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein",
+    "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania",
+    "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar",
+    "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia",
+    "Norway", "Oman", "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines",
+    "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa",
+    "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia",
+    "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden",
+    "Switzerland", "Syria", "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago",
+    "Tunisia", "Turkey", "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay",
+    "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
+  ];
+
+  const isFormValid = () => {
+    const isExempt = formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant";
+
+    const baseRequired = [
+      formData.ageCategory,
+      formData.dateOfDeath,
+      formData.dateOfBurial,
+      formData.nextOfKinName,
+      formData.nextOfKinRelationship,
+      formData.nextOfKinContact,
+      formData.burialPermitNumber,
+      formData.burialPermitDate,
+      formData.burialPermitIssuedBy,
+      formData.burialPermitIssuedByContact,
+      formData.burialPermitIssuedTo,
+      formData.burialPermitIssuedToContact,
+      formData.burialLocation,
+      formData.receiptNo,
+    ];
+
+    if (!isExempt) {
+      baseRequired.push(formData.firstName, formData.lastName, formData.gender, formData.age);
+    }
+
+    if (formData.status === "Rejected") {
+      baseRequired.push(formData.rejectionReason);
+    }
+
+    const allFieldsFilled = baseRequired.every(field => field && String(field).trim() !== "");
+
+    // Check if attachments are required (not required for exempt OR if editing existing OR if files are newly selected)
+    const attachmentsValid = isExempt || editId || files.length > 0 || (existingAttachments && existingAttachments.length > 0);
+
+    return allFieldsFilled && attachmentsValid && termsAccepted;
+  };
 
   // Load locations and user from backend on mount
   useEffect(() => {
@@ -638,14 +749,14 @@ function DataCapture() {
       const response = await apiService.getLocations();
       if (response.data && Array.isArray(response.data)) {
         // Map data for internal tracking (with IDs)
-        const mappedData = response.data.map(loc => 
+        const mappedData = response.data.map(loc =>
           typeof loc === 'string' ? { id: loc, name: loc } : { id: loc._id || loc.id, name: loc.name }
         );
         setLocationData(mappedData);
 
         // Map names for the dropdown
         const fetchedNames = mappedData.map(loc => loc.name);
-        
+
         setLocationOptions((prev) => {
           const defaults = ["Block A", "Main", "Block B", "Lan'gata"];
           return Array.from(new Set([...defaults, ...fetchedNames]));
@@ -682,11 +793,11 @@ function DataCapture() {
     try {
       // Save to backend collection
       await apiService.createLocation(newLocationName.trim());
-      
+
       // Update local state immediately
       setLocationOptions(prev => Array.from(new Set([...prev, newLocationName.trim()])));
       setFormData((prev) => ({ ...prev, burialLocation: newLocationName.trim() }));
-      
+
       setNewLocationName("");
       setShowNewLocationInput(false);
       success("New location saved to database");
@@ -716,6 +827,7 @@ function DataCapture() {
         }
       }
       generateRecordNumberPreview();
+      generateReceiptNumber();
     } else {
       fetchRecordData(editId);
     }
@@ -805,6 +917,32 @@ function DataCapture() {
     }
   };
 
+  const generateReceiptNumber = async () => {
+    try {
+      const year = new Date().getFullYear();
+
+      // Get the latest receipt number from the API
+      const res = await apiService.getLatestReceiptNo();
+      let latestNo = res.data?.latestReceiptNo || "0000";
+
+      // Extract numeric part and increment
+      const numericPart = parseInt(latestNo.replace(/\D/g, ""), 10) || 0;
+      const nextNumber = numericPart + 1;
+
+      // Format: RCP-YYYY-NNNN (e.g., RCP-2026-0001)
+      const paddedNumber = String(nextNumber).padStart(4, "0");
+      const newReceiptNo = `RCP-${year}-${paddedNumber}`;
+
+      console.log(`✅ Generated receipt number: ${newReceiptNo}`);
+      setFormData((prev) => ({ ...prev, receiptNo: newReceiptNo }));
+    } catch (err) {
+      console.error("❌ Error generating receipt number:", err);
+      // Fallback: start from RCP-YYYY-0001
+      const year = new Date().getFullYear();
+      setFormData((prev) => ({ ...prev, receiptNo: `RCP-${year}-0001` }));
+    }
+  };
+
   const fetchRecordData = async (id) => {
     try {
       const res = await apiService.getRecord(id);
@@ -818,6 +956,7 @@ function DataCapture() {
         gender: record.gender || "Male",
         age: record.age || "",
         ageCategory: record.ageCategory || "",
+        nationality: record.nationality || "",
         dateOfDeath: record.dateOfDeath ? record.dateOfDeath.split("T")[0] : "",
         nextOfKinName: record.nextOfKinName || "",
         nextOfKinContact: record.nextOfKinContact || "",
@@ -859,9 +998,17 @@ function DataCapture() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     // Clear rejectionReason when status changes away from "Rejected"
     if (name === "status" && value !== "Rejected") {
       setFormData({ ...formData, [name]: value, rejectionReason: "" });
+    } else if (name === "ageCategory") {
+      // Auto-set age to 1 when infant is selected
+      if (value === "Infant") {
+        setFormData({ ...formData, [name]: value, age: "1" });
+      } else {
+        setFormData({ ...formData, [name]: value });
+      }
     } else {
       setFormData({ ...formData, [name]: value });
     }
@@ -869,6 +1016,24 @@ function DataCapture() {
 
   const handleFileChange = (e) => {
     setFiles(Array.from(e.target.files));
+  };
+
+  // Validation functions
+  const validateMobileNumber = (phone) => {
+    // Accept various formats: +254..., 0..., etc. (10-15 digits)
+    const phoneRegex = /^[\d\s\-\+\(\)]{10,15}$/;
+    return phoneRegex.test(phone.replace(/\s/g, ""));
+  };
+
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validateMpesaRefNo = (refNo) => {
+    // Alphanumeric, exactly 10 characters
+    const mpesaRegex = /^[A-Z0-9]{10}$/i;
+    return mpesaRegex.test(refNo);
   };
 
   const handleSubmit = async (e) => {
@@ -884,6 +1049,30 @@ function DataCapture() {
         error("Date of Death cannot be in the future");
         return;
       }
+    }
+
+    // Validate mobile number
+    if (formData.nextOfKinContact && !validateMobileNumber(formData.nextOfKinContact)) {
+      error("Next of Kin Contact must be a valid mobile number (10-15 digits)");
+      return;
+    }
+
+    // Validate burial permit issued by contact
+    if (formData.burialPermitIssuedByContact && !validateMobileNumber(formData.burialPermitIssuedByContact)) {
+      error("Issuer Contact must be a valid mobile number (10-15 digits)");
+      return;
+    }
+
+    // Validate burial permit issued to contact
+    if (formData.burialPermitIssuedToContact && !validateMobileNumber(formData.burialPermitIssuedToContact)) {
+      error("Recipient Contact must be a valid mobile number (10-15 digits)");
+      return;
+    }
+
+    // Validate Mpesa ref no if provided
+    if (formData.mpesaRefNo && !validateMpesaRefNo(formData.mpesaRefNo)) {
+      error("M-Pesa Reference No must be exactly 10 alphanumeric characters");
+      return;
     }
 
     // Validate age based on age category
@@ -950,6 +1139,11 @@ function DataCapture() {
       return;
     }
 
+    if (!termsAccepted) {
+      error("Please accept the terms and conditions declaration before saving.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -957,7 +1151,7 @@ function DataCapture() {
       let attachments = [];
       if (files.length > 0) {
         try {
-          const uploadedUrls = await uploadMultipleToS3(files, "records");
+          const uploadedUrls = await uploadMultipleToS3(files, "records", null, formData.recordNumber);
           console.log("✅ Files uploaded to S3:", uploadedUrls);
 
           // Format attachments as array of objects with filename and path
@@ -988,6 +1182,7 @@ function DataCapture() {
         "secondaryService",
         "tertiaryService",
         "rejectionReason",
+        "nationality",
       ];
 
       Object.keys(formData).forEach((key) => {
@@ -1042,6 +1237,7 @@ function DataCapture() {
           rejectionReason: "",
         });
         setFiles([]);
+        setTermsAccepted(false);
         setAutoSaveStatus("");
         generateRecordNumberPreview();
       }
@@ -1064,6 +1260,7 @@ function DataCapture() {
       gender: "Male",
       age: "",
       ageCategory: "",
+      nationality: "",
       dateOfDeath: getCurrentDate(),
       nextOfKinName: "",
       nextOfKinContact: "",
@@ -1081,6 +1278,7 @@ function DataCapture() {
       rejectionReason: "",
     });
     setFiles([]);
+    setTermsAccepted(false);
     setAutoSaveStatus("");
     generateRecordNumberPreview();
   };
@@ -1174,7 +1372,7 @@ function DataCapture() {
               <label>
                 First Name{" "}
                 {formData.ageCategory !== "Stillborn" &&
-                formData.ageCategory !== "Infant"
+                  formData.ageCategory !== "Infant"
                   ? "*"
                   : ""}
               </label>
@@ -1202,7 +1400,7 @@ function DataCapture() {
               <label>
                 Last Name{" "}
                 {formData.ageCategory !== "Stillborn" &&
-                formData.ageCategory !== "Infant"
+                  formData.ageCategory !== "Infant"
                   ? "*"
                   : ""}
               </label>
@@ -1230,7 +1428,7 @@ function DataCapture() {
               <label>
                 Gender{" "}
                 {formData.ageCategory !== "Stillborn" &&
-                formData.ageCategory !== "Infant"
+                  formData.ageCategory !== "Infant"
                   ? "*"
                   : ""}
               </label>
@@ -1245,14 +1443,28 @@ function DataCapture() {
               >
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
-                <option value="Other">Other</option>
+              </select>
+            </FormGroup>
+            <FormGroup>
+              <label>Nationality</label>
+              <select
+                name="nationality"
+                value={formData.nationality}
+                onChange={handleChange}
+              >
+                <option value="">Select Nationality</option>
+                {countries.map((country) => (
+                  <option key={country} value={country}>
+                    {country}
+                  </option>
+                ))}
               </select>
             </FormGroup>
             <FormGroup>
               <label>
                 Age{" "}
                 {formData.ageCategory !== "Stillborn" &&
-                formData.ageCategory !== "Infant"
+                  formData.ageCategory !== "Infant"
                   ? "*"
                   : ""}
               </label>
@@ -1265,14 +1477,16 @@ function DataCapture() {
                   formData.ageCategory === "Stillborn"
                     ? "Enter age (typically 0)"
                     : formData.ageCategory === "Infant"
-                    ? "Enter age (0-1 years)"
-                    : formData.ageCategory === "Child"
-                    ? "Enter age (1-12 years)"
-                    : formData.ageCategory === "Adult"
-                    ? "Enter age (above 12 years)"
-                    : "Enter age"
+                      ? "Enter age (0-1 years)"
+                      : formData.ageCategory === "Child"
+                        ? "Enter age (1-12 years)"
+                        : formData.ageCategory === "Adult"
+                          ? "Enter age (above 12 years)"
+                          : "Enter age"
                 }
                 min="0"
+                disabled={formData.ageCategory === "Stillborn"}
+                style={formData.ageCategory === "Stillborn" ? { backgroundColor: "#f3f4f6", cursor: "not-allowed", opacity: 0.6 } : {}}
                 required={
                   formData.ageCategory !== "Stillborn" &&
                   formData.ageCategory !== "Infant"
@@ -1282,9 +1496,9 @@ function DataCapture() {
                 <HelperText>
                   <MdInfoOutline size={14} style={{ marginRight: "4px" }} />
                   {formData.ageCategory === "Stillborn" &&
-                    "Age should be 0 for stillborn"}
+                    "Age field is disabled for Stillborn cases"}
                   {formData.ageCategory === "Infant" &&
-                    "Age must be between 0 and 1 year"}
+                    "Age is automatically set to 1 year"}
                   {formData.ageCategory === "Child" &&
                     "Age must be between 1 and 12 years"}
                   {formData.ageCategory === "Adult" &&
@@ -1424,33 +1638,33 @@ function DataCapture() {
             <FormGroup>
               <label>Issuer Contact Address *</label>
               <input
-                 name="burialPermitIssuedByContact"
-                 value={formData.burialPermitIssuedByContact}
-                 onChange={handleChange}
-                 placeholder="Enter issuer contact details"
-                 required
-               />
+                name="burialPermitIssuedByContact"
+                value={formData.burialPermitIssuedByContact}
+                onChange={handleChange}
+                placeholder="Enter issuer contact details"
+                required
+              />
             </FormGroup>
             <FormGroup>
               <label>Permit Issued To *</label>
               <input
-                 name="burialPermitIssuedTo"
-                 value={formData.burialPermitIssuedTo}
-                 onChange={handleChange}
-                 placeholder="Enter recipient name"
-                 required
-               />
+                name="burialPermitIssuedTo"
+                value={formData.burialPermitIssuedTo}
+                onChange={handleChange}
+                placeholder="Enter recipient name"
+                required
+              />
             </FormGroup>
             <FormGroup>
               <label>Recipient Contact Number *</label>
               <input
-                 type="tel"
-                 name="burialPermitIssuedToContact"
-                 value={formData.burialPermitIssuedToContact}
-                 onChange={handleChange}
-                 placeholder="Enter recipient contact"
-                 required
-               />
+                type="tel"
+                name="burialPermitIssuedToContact"
+                value={formData.burialPermitIssuedToContact}
+                onChange={handleChange}
+                placeholder="Enter recipient contact"
+                required
+              />
             </FormGroup>
           </FormGrid>
 
@@ -1543,7 +1757,7 @@ function DataCapture() {
               />
             </FormGroup>
             <FormGroup>
-              <label>Amount Paid for Burial</label>
+              <label>Amount Payable for Burial</label>
               <input
                 type="number"
                 name="amountPaidBurial"
@@ -1553,6 +1767,7 @@ function DataCapture() {
                 min="0"
               />
             </FormGroup>
+            {/* 
             <FormGroup>
               <label>Secondary Service</label>
               <select
@@ -1603,6 +1818,7 @@ function DataCapture() {
                 min="0"
               />
             </FormGroup>
+            */}
           </FormGrid>
 
           <SectionTitle>
@@ -1616,7 +1832,7 @@ function DataCapture() {
               <label>
                 Mpesa Ref No.
                 <Tooltip
-                  content="M-Pesa is a mobile money service used mainly in Kenya and Tanzania that allows people to send, receive, and pay using their phones without a bank account."
+                  content="M-Pesa is a mobile money service used mainly in Kenya and Tanzania that allows people to send, receive, and pay using their phones without a bank account. Must be exactly 10 alphanumeric characters."
                   position="right"
                   multiline={true}
                   width="450px"
@@ -1630,18 +1846,54 @@ function DataCapture() {
                 name="mpesaRefNo"
                 value={formData.mpesaRefNo}
                 onChange={handleChange}
-                placeholder="Enter M-Pesa reference number"
+                placeholder="Enter M-Pesa reference number (10 characters)"
+                maxLength="10"
               />
+              {formData.mpesaRefNo && (
+                <HelperText>
+                  <MdInfoOutline size={14} style={{ marginRight: "4px" }} />
+                  {validateMpesaRefNo(formData.mpesaRefNo) ? (
+                    <span style={{ color: "#10b981" }}>✓ Valid M-Pesa reference</span>
+                  ) : (
+                    <span style={{ color: "#ef4444" }}>✗ Must be exactly 10 alphanumeric characters</span>
+                  )}
+                </HelperText>
+              )}
             </FormGroup>
             <FormGroup>
               <label>Receipt No. *</label>
-              <input
-                name="receiptNo"
-                value={formData.receiptNo}
-                onChange={handleChange}
-                placeholder="Enter receipt number"
-                required
-              />
+              <div
+                style={{ display: "flex", gap: "8px", alignItems: "center" }}
+              >
+                <input
+                  name="receiptNo"
+                  value={formData.receiptNo}
+                  readOnly
+                  placeholder="Auto-generated"
+                  required
+                  style={{
+                    fontWeight: 600,
+                    fontSize: "16px",
+                    color: "#667eea",
+                    flex: 1,
+                  }}
+                />
+                <Button
+                  type="button"
+                  onClick={generateReceiptNumber}
+                  style={{
+                    padding: "10px 16px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    whiteSpace: "nowrap",
+                  }}
+                  title="Regenerate receipt number"
+                >
+                  <MdRefresh size={18} />
+                  Refresh
+                </Button>
+              </div>
             </FormGroup>
           </FormGrid>
 
@@ -1653,7 +1905,7 @@ function DataCapture() {
           </SectionTitle>
 
           {formData.ageCategory === "Stillborn" ||
-          formData.ageCategory === "Infant" ? (
+            formData.ageCategory === "Infant" ? (
             <ExemptionNote>
               <div className="icon">
                 <MdCheckCircleOutline size={20} />
@@ -1819,8 +2071,25 @@ function DataCapture() {
             </FormGroup>
           )}
 
+          <TermsContainer>
+            <input
+              type="checkbox"
+              id="termsAccepted"
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+            />
+            <label htmlFor="termsAccepted">
+              <strong>Declaration:</strong> I hereby declare that the information provided in this burial record application is true and accurate to the best of my knowledge. I understand that providing false information may lead to legal action and the cancellation of this record. I agree to the <strong>Terms and Conditions</strong> of the ISMA Burial Record Management System.
+            </label>
+          </TermsContainer>
+
           <SubmitSection>
-            <Button $variant="primary" type="submit" disabled={loading}>
+            <Button
+              $variant="primary"
+              type="submit"
+              disabled={loading || !isFormValid()}
+              title={!isFormValid() ? "Please fill all mandatory fields and accept the declaration to enable saving" : ""}
+            >
               {loading ? (
                 <>
                   <InlineSpinner size="16px" thickness="2px" /> Saving...
@@ -1864,11 +2133,11 @@ function DataCapture() {
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {locationData.map((loc) => (
-                <div 
-                  key={loc.id} 
-                  style={{ 
-                    display: "flex", 
-                    justifyContent: "space-between", 
+                <div
+                  key={loc.id}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
                     alignItems: "center",
                     padding: "12px",
                     background: theme.colors.gray50,
@@ -1878,8 +2147,8 @@ function DataCapture() {
                 >
                   <span style={{ fontWeight: 500 }}>{loc.name}</span>
                   {!["Block A", "Main", "Block B", "Lan'gata"].includes(loc.name) && (
-                    <Button 
-                      $variant="danger" 
+                    <Button
+                      $variant="danger"
                       $size="small"
                       onClick={() => handleDeleteLocation(loc.id, loc.name)}
                       style={{ padding: "6px" }}

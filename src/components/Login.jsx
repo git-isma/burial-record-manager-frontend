@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from '../utils/axios';
 import { apiService } from '../utils/api';
+import ismaLogo from '../assets/ISMA-logo.png';
 import styled, { keyframes } from 'styled-components';
 import { theme } from '../styles/theme';
-import { MdDescription } from 'react-icons/md';
 
 const fadeIn = keyframes`
   from {
@@ -81,60 +81,70 @@ const LoginCard = styled.div`
 `;
 
 const Logo = styled.div`
-  text-align: center;
-  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 32px;
+  text-align: left;
 
-  .logo-icon {
-    width: 48px;
-    height: 48px;
-    margin: 0 auto 12px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 16px;
+  .logo-image {
+    width: 64px;
+    height: 64px;
+    margin: 0;
+    background: white;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
-    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+    padding: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     animation: ${float} 3s ease-in-out infinite;
-
-    body.dark-theme & {
-      background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-    }
+    flex-shrink: 0;
 
     @media (min-width: 640px) {
-      width: 64px;
-      height: 64px;
-      margin: 0 auto 16px;
-      font-size: 32px;
+      width: 80px;
+      height: 80px;
     }
+  }
+
+  .text-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
   }
 
   h1 {
     font-size: 18px;
-    font-weight: 700;
-    color: ${theme.colors.gray900};
+    font-weight: 800;
+    color: #0f172a;
     margin: 0;
+    line-height: 1.1;
+    font-family: 'Inter', sans-serif;
 
     body.dark-theme & {
-      color: #e5e5e5;
+      color: #f8fafc;
     }
 
     @media (min-width: 640px) {
-      font-size: 24px;
+      font-size: 22px;
     }
   }
 
   p {
-    color: ${theme.colors.gray600};
+    color: #64748b;
     font-size: 12px;
     margin: 0;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
 
     body.dark-theme & {
-      color: #b0b0b0;
+      color: #94a3b8;
     }
 
     @media (min-width: 640px) {
-      font-size: 14px;
+      font-size: 13px;
     }
   }
 `;
@@ -344,9 +354,13 @@ function Login({ onLogin }) {
     <LoginContainer>
       <LoginCard>
         <Logo>
-          <div className="logo-icon"><MdDescription size={48} /></div>
-          <h1>Burial Record Manager</h1>
-          <p>Access your record data securely.</p>
+          <div className="logo-image">
+            <img src={ismaLogo} alt="ISMA Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          </div>
+          <div className="text-container">
+            <h1>Islamia School &<br />Mosque Association</h1>
+            <p>Burial Record Manager</p>
+          </div>
         </Logo>
 
         {error && <ErrorMessage>{error}</ErrorMessage>}
