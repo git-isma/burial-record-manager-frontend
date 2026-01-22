@@ -642,97 +642,248 @@ function VerifyRecords() {
           <div style={{ padding: '0 8px' }}>
             <SectionTitle>Deceased Information</SectionTitle>
             <ViewGrid>
-              <ViewItem>
-                <ViewLabel>Full Name</ViewLabel>
-                <ViewValue>{`${viewModal.record.firstName} ${viewModal.record.lastName}`}</ViewValue>
-              </ViewItem>
-              <ViewItem>
-                <ViewLabel>Gender</ViewLabel>
-                <ViewValue>{viewModal.record.gender || 'N/A'}</ViewValue>
-              </ViewItem>
-              <ViewItem>
-                <ViewLabel>Age</ViewLabel>
-                <ViewValue>{viewModal.record.age ? `${viewModal.record.age} (${viewModal.record.ageCategory})` : 'N/A'}</ViewValue>
-              </ViewItem>
-              <ViewItem>
-                <ViewLabel>Date of Death</ViewLabel>
-                <ViewValue>{formatDate(viewModal.record.dateOfDeath)}</ViewValue>
-              </ViewItem>
-              <ViewItem>
-                <ViewLabel>Burial Location</ViewLabel>
-                <ViewValue>{viewModal.record.burialLocation || 'N/A'}</ViewValue>
-              </ViewItem>
+              {viewModal.record.recordNumber && (
+                <ViewItem>
+                  <ViewLabel>Record Number</ViewLabel>
+                  <ViewValue>{viewModal.record.recordNumber}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.firstName && (
+                <ViewItem>
+                  <ViewLabel>First Name</ViewLabel>
+                  <ViewValue>{viewModal.record.firstName}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.middleName && (
+                <ViewItem>
+                  <ViewLabel>Middle Name</ViewLabel>
+                  <ViewValue>{viewModal.record.middleName}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.lastName && (
+                <ViewItem>
+                  <ViewLabel>Last Name</ViewLabel>
+                  <ViewValue>{viewModal.record.lastName}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.idPassportNo && (
+                <ViewItem>
+                  <ViewLabel>ID / Passport No</ViewLabel>
+                  <ViewValue>{viewModal.record.idPassportNo}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.gender && (
+                <ViewItem>
+                  <ViewLabel>Gender</ViewLabel>
+                  <ViewValue>{viewModal.record.gender}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.age && (
+                <ViewItem>
+                  <ViewLabel>Age</ViewLabel>
+                  <ViewValue>{viewModal.record.age}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.ageCategory && (
+                <ViewItem>
+                  <ViewLabel>Age Category</ViewLabel>
+                  <ViewValue>{viewModal.record.ageCategory}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.nationality && (
+                <ViewItem>
+                  <ViewLabel>Nationality</ViewLabel>
+                  <ViewValue>{viewModal.record.nationality}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.dateOfDeath && (
+                <ViewItem>
+                  <ViewLabel>Date of Death</ViewLabel>
+                  <ViewValue>{formatDate(viewModal.record.dateOfDeath)}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.dateOfBurial && (
+                <ViewItem>
+                  <ViewLabel>Date of Burial</ViewLabel>
+                  <ViewValue>{formatDate(viewModal.record.dateOfBurial)}</ViewValue>
+                </ViewItem>
+              )}
             </ViewGrid>
 
-            <SectionTitle>Next of Kin Details</SectionTitle>
+            <SectionTitle>Next of Kin Information</SectionTitle>
             <ViewGrid>
-              <ViewItem>
-                <ViewLabel>Name</ViewLabel>
-                <ViewValue>{viewModal.record.nextOfKinName || 'N/A'}</ViewValue>
-              </ViewItem>
-              <ViewItem>
-                <ViewLabel>Contact</ViewLabel>
-                <ViewValue>{viewModal.record.nextOfKinContact || 'N/A'}</ViewValue>
-              </ViewItem>
+              {viewModal.record.nextOfKinName && (
+                <ViewItem>
+                  <ViewLabel>Name</ViewLabel>
+                  <ViewValue>{viewModal.record.nextOfKinName}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.nextOfKinRelationship && (
+                <ViewItem>
+                  <ViewLabel>Relationship</ViewLabel>
+                  <ViewValue>{viewModal.record.nextOfKinRelationship}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.nextOfKinContact && (
+                <ViewItem>
+                  <ViewLabel>Contact</ViewLabel>
+                  <ViewValue>{viewModal.record.nextOfKinContact}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.nextOfKinIdPassport && (
+                <ViewItem>
+                  <ViewLabel>ID / Passport No</ViewLabel>
+                  <ViewValue>{viewModal.record.nextOfKinIdPassport}</ViewValue>
+                </ViewItem>
+              )}
             </ViewGrid>
 
-            <SectionTitle>Services & Payment</SectionTitle>
+            <SectionTitle>Burial Permit Details</SectionTitle>
             <ViewGrid>
-              <ViewItem>
-                <ViewLabel>Primary Service</ViewLabel>
-                <ViewValue>{viewModal.record.primaryService || 'N/A'}</ViewValue>
-              </ViewItem>
-              <ViewItem>
-                <ViewLabel>Primary Amount</ViewLabel>
-                <ViewValue>{viewModal.record.amountPaidBurial ? `KES ${viewModal.record.amountPaidBurial.toLocaleString()}` : '0'}</ViewValue>
-              </ViewItem>
+              {viewModal.record.burialPermitNumber && (
+                <ViewItem>
+                  <ViewLabel>Permit Number</ViewLabel>
+                  <ViewValue>{viewModal.record.burialPermitNumber}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.burialPermitDate && (
+                <ViewItem>
+                  <ViewLabel>Permit Date</ViewLabel>
+                  <ViewValue>{formatDate(viewModal.record.burialPermitDate)}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.burialPermitIssuedBy && (
+                <ViewItem>
+                  <ViewLabel>Issued By</ViewLabel>
+                  <ViewValue>{viewModal.record.burialPermitIssuedBy}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.burialPermitIssuedByContact && (
+                <ViewItem>
+                  <ViewLabel>Issuer Contact</ViewLabel>
+                  <ViewValue>{viewModal.record.burialPermitIssuedByContact}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.burialPermitIssuedTo && (
+                <ViewItem>
+                  <ViewLabel>Issued To</ViewLabel>
+                  <ViewValue>{viewModal.record.burialPermitIssuedTo}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.burialPermitIssuedToContact && (
+                <ViewItem>
+                  <ViewLabel>Recipient Contact</ViewLabel>
+                  <ViewValue>{viewModal.record.burialPermitIssuedToContact}</ViewValue>
+                </ViewItem>
+              )}
+            </ViewGrid>
 
+            <SectionTitle>Burial Location & Services</SectionTitle>
+            <ViewGrid>
+              {viewModal.record.burialLocation && (
+                <ViewItem>
+                  <ViewLabel>Burial Location</ViewLabel>
+                  <ViewValue>{viewModal.record.burialLocation}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.primaryService && (
+                <ViewItem>
+                  <ViewLabel>Primary Service</ViewLabel>
+                  <ViewValue>{viewModal.record.primaryService}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.amountPaidBurial && (
+                <ViewItem>
+                  <ViewLabel>Amount Payable for Burial</ViewLabel>
+                  <ViewValue>KES {viewModal.record.amountPaidBurial.toLocaleString()}</ViewValue>
+                </ViewItem>
+              )}
               {viewModal.record.secondaryService && viewModal.record.secondaryService !== 'None' && (
-                <>
-                  <ViewItem>
-                    <ViewLabel>Secondary Service</ViewLabel>
-                    <ViewValue>{viewModal.record.secondaryService}</ViewValue>
-                  </ViewItem>
-                  <ViewItem>
-                    <ViewLabel>Secondary Amount</ViewLabel>
-                    <ViewValue>{viewModal.record.amountPaidSecondary ? `KES ${viewModal.record.amountPaidSecondary.toLocaleString()}` : '0'}</ViewValue>
-                  </ViewItem>
-                </>
+                <ViewItem>
+                  <ViewLabel>Secondary Service</ViewLabel>
+                  <ViewValue>{viewModal.record.secondaryService}</ViewValue>
+                </ViewItem>
               )}
-
+              {viewModal.record.amountPaidSecondary && (
+                <ViewItem>
+                  <ViewLabel>Secondary Amount</ViewLabel>
+                  <ViewValue>KES {viewModal.record.amountPaidSecondary.toLocaleString()}</ViewValue>
+                </ViewItem>
+              )}
               {viewModal.record.tertiaryService && viewModal.record.tertiaryService !== 'None' && (
-                <>
-                  <ViewItem>
-                    <ViewLabel>Tertiary Service</ViewLabel>
-                    <ViewValue>{viewModal.record.tertiaryService}</ViewValue>
-                  </ViewItem>
-                  <ViewItem>
-                    <ViewLabel>Tertiary Amount</ViewLabel>
-                    <ViewValue>{viewModal.record.amountPaidTertiary ? `KES ${viewModal.record.amountPaidTertiary.toLocaleString()}` : '0'}</ViewValue>
-                  </ViewItem>
-                </>
+                <ViewItem>
+                  <ViewLabel>Other Services</ViewLabel>
+                  <ViewValue>{viewModal.record.tertiaryService}</ViewValue>
+                </ViewItem>
               )}
-
-              <ViewItem>
-                <ViewLabel>M-Pesa Ref No</ViewLabel>
-                <ViewValue>{viewModal.record.mpesaRefNo || 'N/A'}</ViewValue>
-              </ViewItem>
-              <ViewItem>
-                <ViewLabel>Receipt No</ViewLabel>
-                <ViewValue>{viewModal.record.receiptNo || 'N/A'}</ViewValue>
-              </ViewItem>
+              {viewModal.record.amountPaidTertiary && (
+                <ViewItem>
+                  <ViewLabel>Other Services Amount</ViewLabel>
+                  <ViewValue>KES {viewModal.record.amountPaidTertiary.toLocaleString()}</ViewValue>
+                </ViewItem>
+              )}
             </ViewGrid>
 
-            <SectionTitle>Submission Info</SectionTitle>
+            <SectionTitle>Payment Information</SectionTitle>
             <ViewGrid>
-              <ViewItem>
-                <ViewLabel>Applicant ID</ViewLabel>
-                <ViewValue>{viewModal.record.applicantId || 'N/A'}</ViewValue>
-              </ViewItem>
-              <ViewItem>
-                <ViewLabel>Submitted On</ViewLabel>
-                <ViewValue>{formatDate(viewModal.record.createdAt)}</ViewValue>
-              </ViewItem>
+              {viewModal.record.mpesaRefNo && (
+                <ViewItem>
+                  <ViewLabel>M-Pesa Ref No</ViewLabel>
+                  <ViewValue>{viewModal.record.mpesaRefNo}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.receiptNo && (
+                <ViewItem>
+                  <ViewLabel>Receipt No</ViewLabel>
+                  <ViewValue>{viewModal.record.receiptNo}</ViewValue>
+                </ViewItem>
+              )}
+            </ViewGrid>
+
+            <SectionTitle>Submission Information</SectionTitle>
+            <ViewGrid>
+              {viewModal.record.recordNumber && (
+                <ViewItem>
+                  <ViewLabel>Record Number</ViewLabel>
+                  <ViewValue>{viewModal.record.recordNumber}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.applicantId && (
+                <ViewItem>
+                  <ViewLabel>Applicant ID</ViewLabel>
+                  <ViewValue>{viewModal.record.applicantId}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.applicantName && (
+                <ViewItem>
+                  <ViewLabel>Applicant Name</ViewLabel>
+                  <ViewValue>{viewModal.record.applicantName}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.applicantEmail && (
+                <ViewItem>
+                  <ViewLabel>Applicant Email</ViewLabel>
+                  <ViewValue>{viewModal.record.applicantEmail}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.applicantPhone && (
+                <ViewItem>
+                  <ViewLabel>Applicant Phone</ViewLabel>
+                  <ViewValue>{viewModal.record.applicantPhone}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.applicantIdPassport && (
+                <ViewItem>
+                  <ViewLabel>Applicant ID / Passport</ViewLabel>
+                  <ViewValue>{viewModal.record.applicantIdPassport}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.createdAt && (
+                <ViewItem>
+                  <ViewLabel>Submitted On</ViewLabel>
+                  <ViewValue>{formatDate(viewModal.record.createdAt)}</ViewValue>
+                </ViewItem>
+              )}
             </ViewGrid>
 
             <SectionTitle>Attachments</SectionTitle>
