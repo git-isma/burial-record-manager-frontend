@@ -1020,8 +1020,8 @@ function DataCapture() {
 
   // Validation functions
   const validateMobileNumber = (phone) => {
-    // Accept various formats: +254..., 0..., etc. (10-15 digits)
-    const phoneRegex = /^[\d\s\-\+\(\)]{10,15}$/;
+    // Accept exactly 10 digits
+    const phoneRegex = /^[\d\s\-\+\(\)]{10}$/;
     return phoneRegex.test(phone.replace(/\s/g, ""));
   };
 
@@ -1053,19 +1053,13 @@ function DataCapture() {
 
     // Validate mobile number
     if (formData.nextOfKinContact && !validateMobileNumber(formData.nextOfKinContact)) {
-      error("Next of Kin Contact must be a valid mobile number (10-15 digits)");
-      return;
-    }
-
-    // Validate burial permit issued by contact
-    if (formData.burialPermitIssuedByContact && !validateMobileNumber(formData.burialPermitIssuedByContact)) {
-      error("Issuer Contact must be a valid mobile number (10-15 digits)");
+      error("Next of Kin Contact must be a valid mobile number (10 digits)");
       return;
     }
 
     // Validate burial permit issued to contact
     if (formData.burialPermitIssuedToContact && !validateMobileNumber(formData.burialPermitIssuedToContact)) {
-      error("Recipient Contact must be a valid mobile number (10-15 digits)");
+      error("Recipient Contact must be a valid mobile number (10 digits)");
       return;
     }
 
@@ -1418,16 +1412,16 @@ function DataCapture() {
             <FormGroup>
               <label>
                 ID / Passport No
-                {formData.ageCategory !== "Stillborn" &&
-                  formData.ageCategory !== "Infant"
-                  ? ""
-                  : " (Optional)"}
+                {(formData.ageCategory === "Child" || formData.ageCategory === "Adult")
+                  ? " *"
+                  : ""}
               </label>
               <input
                 name="idPassportNo"
                 value={formData.idPassportNo}
                 onChange={handleChange}
                 placeholder="Enter ID or Passport number"
+                required={formData.ageCategory === "Child" || formData.ageCategory === "Adult"}
               />
             </FormGroup>
             <FormGroup>
@@ -1487,7 +1481,7 @@ function DataCapture() {
                       : formData.ageCategory === "Child"
                         ? "Enter age (1-12 years)"
                         : formData.ageCategory === "Adult"
-                          ? "Enter age (above 12 years)"
+                          ? "Enter age (13+ years)"
                           : "Enter age"
                 }
                 min="0"
@@ -1592,14 +1586,25 @@ function DataCapture() {
                 placeholder="e.g., 0712345678"
                 required
               />
+              {formData.nextOfKinContact && (
+                <HelperText>
+                  <MdInfoOutline size={14} style={{ marginRight: "4px" }} />
+                  {validateMobileNumber(formData.nextOfKinContact) ? (
+                    <span style={{ color: "#10b981" }}>✓ Valid mobile number</span>
+                  ) : (
+                    <span style={{ color: "#ef4444" }}>✗ Must be 10 digits</span>
+                  )}
+                </HelperText>
+              )}
             </FormGroup>
             <FormGroup>
-              <label>Next of Kin ID / Passport No</label>
+              <label>Next of Kin ID / Passport No *</label>
               <input
                 name="nextOfKinIdPassport"
                 value={formData.nextOfKinIdPassport}
                 onChange={handleChange}
                 placeholder="Enter ID or Passport number"
+                required
               />
             </FormGroup>
           </FormGrid>
@@ -1618,7 +1623,10 @@ function DataCapture() {
           )}
           <FormGrid>
             <FormGroup>
-              <label>Burial Permit Number *</label>
+              <label>
+                Burial Permit Number
+                {formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant" ? " *" : ""}
+              </label>
               <input
                 name="burialPermitNumber"
                 value={formData.burialPermitNumber}
@@ -1626,22 +1634,28 @@ function DataCapture() {
                 placeholder="Enter permit number"
                 disabled={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant"}
                 style={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant" ? { backgroundColor: "#f3f4f6", cursor: "not-allowed", opacity: 0.6 } : {}}
-                required
+                required={formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant"}
               />
             </FormGroup>
             <FormGroup>
-              <label>Date of Burial Permit *</label>
+              <label>
+                Date of Burial Permit
+                {formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant" ? " *" : ""}
+              </label>
               <ModernDatePicker
                 value={formData.burialPermitDate}
                 onChange={handleChange}
                 name="burialPermitDate"
                 placeholder="Pick permit date"
                 disabled={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant"}
-                required
+                required={formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant"}
               />
             </FormGroup>
             <FormGroup>
-              <label>Permit Issued By *</label>
+              <label>
+                Permit Issued By
+                {formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant" ? " *" : ""}
+              </label>
               <input
                 name="burialPermitIssuedBy"
                 value={formData.burialPermitIssuedBy}
@@ -1649,11 +1663,14 @@ function DataCapture() {
                 placeholder="Enter issuer name/authority"
                 disabled={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant"}
                 style={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant" ? { backgroundColor: "#f3f4f6", cursor: "not-allowed", opacity: 0.6 } : {}}
-                required
+                required={formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant"}
               />
             </FormGroup>
             <FormGroup>
-              <label>Issuer Contact Address *</label>
+              <label>
+                Issuer Contact Address
+                {formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant" ? " *" : ""}
+              </label>
               <input
                 name="burialPermitIssuedByContact"
                 value={formData.burialPermitIssuedByContact}
@@ -1661,11 +1678,14 @@ function DataCapture() {
                 placeholder="Enter issuer contact details"
                 disabled={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant"}
                 style={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant" ? { backgroundColor: "#f3f4f6", cursor: "not-allowed", opacity: 0.6 } : {}}
-                required
+                required={formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant"}
               />
             </FormGroup>
             <FormGroup>
-              <label>Permit Issued To *</label>
+              <label>
+                Permit Issued To
+                {formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant" ? " *" : ""}
+              </label>
               <input
                 name="burialPermitIssuedTo"
                 value={formData.burialPermitIssuedTo}
@@ -1673,11 +1693,14 @@ function DataCapture() {
                 placeholder="Enter recipient name"
                 disabled={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant"}
                 style={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant" ? { backgroundColor: "#f3f4f6", cursor: "not-allowed", opacity: 0.6 } : {}}
-                required
+                required={formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant"}
               />
             </FormGroup>
             <FormGroup>
-              <label>Recipient Contact Number *</label>
+              <label>
+                Recipient Contact Number
+                {formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant" ? " *" : ""}
+              </label>
               <input
                 type="tel"
                 name="burialPermitIssuedToContact"
@@ -1686,8 +1709,18 @@ function DataCapture() {
                 placeholder="Enter recipient contact"
                 disabled={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant"}
                 style={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant" ? { backgroundColor: "#f3f4f6", cursor: "not-allowed", opacity: 0.6 } : {}}
-                required
+                required={formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant"}
               />
+              {formData.burialPermitIssuedToContact && formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant" && (
+                <HelperText>
+                  <MdInfoOutline size={14} style={{ marginRight: "4px" }} />
+                  {validateMobileNumber(formData.burialPermitIssuedToContact) ? (
+                    <span style={{ color: "#10b981" }}>✓ Valid mobile number</span>
+                  ) : (
+                    <span style={{ color: "#ef4444" }}>✗ Must be 10 digits</span>
+                  )}
+                </HelperText>
+              )}
             </FormGroup>
           </FormGrid>
 
