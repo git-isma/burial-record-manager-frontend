@@ -531,7 +531,7 @@ function Layout({ user, onLogout }) {
             <img src={ismaLogo} alt="Logo" />
             <div className="brand-text">
               <h2>BURIAL RECORDS</h2>
-              <p>ISMA OFFICIAL SYSTEM</p>
+              <p>ISMA LEGACY SYSTEM</p>
             </div>
           </div>
         </SidebarHeader>
