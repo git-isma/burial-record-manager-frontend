@@ -551,7 +551,6 @@ const TermsContainer = styled.div`
     line-height: 1.5;
     color: ${theme.colors.gray700};
     cursor: pointer;
-    user-select: none;
 
     body.dark-theme & {
       color: #ccc;
@@ -601,6 +600,7 @@ const AutoSaveIndicator = styled.div`
   }
 `;
 
+
 function DataCapture() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -623,7 +623,7 @@ function DataCapture() {
     middleName: "",
     lastName: "",
     idPassportNo: "",
-    gender: "Male",
+    gender: "",
     age: "",
     ageCategory: "",
     nationality: "",
@@ -631,21 +631,22 @@ function DataCapture() {
     nextOfKinName: "",
     nextOfKinContact: "",
     nextOfKinIdPassport: "",
-    burialLocation: "Block A",
+    burialLocation: "",
+    burialTime: "",
     primaryService: "Burial",
     amountPaidBurial: "",
     secondaryService: "None",
-    amountPaidSecondary: "",
+    amountPaidSecondary: 0,
     tertiaryService: "None",
-    amountPaidTertiary: "",
+    amountPaidTertiary: 0,
     mpesaRefNo: "",
     receiptNo: "",
     status: "Pending",
     rejectionReason: "",
-    dateOfBurial: "",
+    dateOfBurial: getCurrentDate(),
     nextOfKinRelationship: "",
     burialPermitNumber: "",
-    burialPermitDate: "",
+    burialPermitDate: getCurrentDate(),
     burialPermitIssuedBy: "",
     burialPermitIssuedByContact: "",
     burialPermitIssuedTo: "",
@@ -657,16 +658,15 @@ function DataCapture() {
   const [autoSaveStatus, setAutoSaveStatus] = useState(""); // '', 'saving', 'saved'
   const [existingAttachments, setExistingAttachments] = useState([]);
   const [user, setUser] = useState(null);
-  const [locationOptions, setLocationOptions] = useState([
-    "Block A",
-    "Main",
-    "Block B",
-    "Lan'gata",
-  ]);
+  const [locationOptions, setLocationOptions] = useState([]);
   const [showNewLocationInput, setShowNewLocationInput] = useState(false);
   const [newLocationName, setNewLocationName] = useState("");
   const [showManageModal, setShowManageModal] = useState(false);
-  const [locationData, setLocationData] = useState([]); // Array of objects {id, name}
+  const [locationData, setLocationData] = useState([]);
+  const [newLocationDaytimePrice, setNewLocationDaytimePrice] = useState(16000);
+  const [newLocationNighttimePrice, setNewLocationNighttimePrice] = useState(22000);
+  const [editingLocation, setEditingLocation] = useState(null);
+ // Array of objects {id, name}
 
   // Countries list
   const countries = [
@@ -710,6 +710,7 @@ function DataCapture() {
       formData.burialPermitIssuedTo,
       formData.burialPermitIssuedToContact,
       formData.burialLocation,
+      formData.burialTime,
       formData.receiptNo,
     ];
 
@@ -748,19 +749,9 @@ function DataCapture() {
     try {
       const response = await apiService.getLocations();
       if (response.data && Array.isArray(response.data)) {
-        // Map data for internal tracking (with IDs)
-        const mappedData = response.data.map(loc =>
-          typeof loc === 'string' ? { id: loc, name: loc } : { id: loc._id || loc.id, name: loc.name }
-        );
-        setLocationData(mappedData);
-
-        // Map names for the dropdown
-        const fetchedNames = mappedData.map(loc => loc.name);
-
-        setLocationOptions((prev) => {
-          const defaults = ["Block A", "Main", "Block B", "Lan'gata"];
-          return Array.from(new Set([...defaults, ...fetchedNames]));
-        });
+        setLocationData(response.data);
+        const fetchedNames = response.data.map(loc => typeof loc === 'string' ? loc : loc.name);
+        setLocationOptions(fetchedNames);
       }
     } catch (err) {
       console.error("Error fetching locations:", err);
@@ -768,13 +759,6 @@ function DataCapture() {
   };
 
   const handleDeleteLocation = async (id, name) => {
-    // Prevent deleting default locations
-    const defaults = ["Block A", "Main", "Block B", "Lan'gata"];
-    if (defaults.includes(name)) {
-      error("Cannot delete default system locations");
-      return;
-    }
-
     if (!window.confirm(`Are you sure you want to delete "${name}"?`)) return;
 
     try {
@@ -791,19 +775,38 @@ function DataCapture() {
     if (!newLocationName.trim()) return;
 
     try {
-      // Save to backend collection
-      await apiService.createLocation(newLocationName.trim());
-
-      // Update local state immediately
-      setLocationOptions(prev => Array.from(new Set([...prev, newLocationName.trim()])));
-      setFormData((prev) => ({ ...prev, burialLocation: newLocationName.trim() }));
+      // Save to backend collection with prices
+      await apiService.createLocation({
+        name: newLocationName.trim(),
+        daytimePrice: newLocationDaytimePrice,
+        nighttimePrice: newLocationNighttimePrice
+      });
 
       setNewLocationName("");
+      setNewLocationDaytimePrice(16000);
+      setNewLocationNighttimePrice(22000);
       setShowNewLocationInput(false);
-      success("New location saved to database");
+      success("New location saved with pricing");
+      fetchLocations();
     } catch (err) {
       console.error("Error adding location:", err);
-      error(err.response?.data?.message || "Failed to save new location");
+      error(err.response?.data?.message || err.response?.data?.msg || "Failed to save new location");
+    }
+  };
+
+  const handleUpdateLocation = async () => {
+    if (!editingLocation) return;
+    try {
+      await apiService.updateLocation(editingLocation._id, {
+        daytimePrice: editingLocation.daytimePrice,
+        nighttimePrice: editingLocation.nighttimePrice
+      });
+      setEditingLocation(null);
+      success("Location prices updated");
+      fetchLocations();
+    } catch (err) {
+      console.error("Error updating location:", err);
+      error("Failed to update location pricing");
     }
   };
 
@@ -858,6 +861,7 @@ function DataCapture() {
       return () => clearTimeout(timer);
     }
   }, [formData, editId, settings.autoSave]);
+
 
   const generateRecordNumberPreview = async () => {
     try {
@@ -962,12 +966,13 @@ function DataCapture() {
         nextOfKinContact: record.nextOfKinContact || "",
         nextOfKinIdPassport: record.nextOfKinIdPassport || "",
         burialLocation: record.burialLocation || "Block A",
+        burialTime: record.burialTime || "",
         primaryService: record.primaryService || "Burial",
         amountPaidBurial: record.amountPaidBurial || "",
         secondaryService: record.secondaryService || "None",
-        amountPaidSecondary: record.amountPaidSecondary || "",
+        amountPaidSecondary: record.amountPaidSecondary || 0,
         tertiaryService: record.tertiaryService || "None",
-        amountPaidTertiary: record.amountPaidTertiary || "",
+        amountPaidTertiary: record.amountPaidTertiary || 0,
         mpesaRefNo: record.mpesaRefNo || "",
         receiptNo: record.receiptNo || "",
         status:
@@ -1009,6 +1014,21 @@ function DataCapture() {
       } else {
         setFormData({ ...formData, [name]: value });
       }
+    } else if (name === "burialLocation" || name === "burialTime") {
+      const locationName = name === "burialLocation" ? value : formData.burialLocation;
+      const time = name === "burialTime" ? value : formData.burialTime;
+
+      let amount = formData.amountPaidBurial;
+      if (locationName && time) {
+        // Find location in dynamic data
+        const loc = locationData.find(l => (typeof l === 'string' ? l === locationName : l.name === locationName));
+        if (loc && typeof loc === 'object') {
+          amount = time === "Daytime" ? (loc.daytimePrice || 0) : (loc.nighttimePrice || 0);
+        } else {
+          amount = 0;
+        }
+      }
+      setFormData({ ...formData, [name]: value, amountPaidBurial: amount });
     } else {
       setFormData({ ...formData, [name]: value });
     }
@@ -1219,6 +1239,7 @@ function DataCapture() {
           nextOfKinContact: "",
           nextOfKinIdPassport: "",
           burialLocation: "Block A",
+          burialTime: "",
           primaryService: "Burial",
           amountPaidBurial: "",
           secondaryService: "None",
@@ -1260,6 +1281,7 @@ function DataCapture() {
       nextOfKinContact: "",
       nextOfKinIdPassport: "",
       burialLocation: "Block A",
+      burialTime: "",
       primaryService: "Burial",
       amountPaidBurial: "",
       secondaryService: "None",
@@ -1348,12 +1370,14 @@ function DataCapture() {
           </SectionTitle>
           <FormGrid>
             <FormGroup>
-              <label>Age Category *</label>
+              <label htmlFor="ageCategory">Age Category *</label>
               <select
+                id="ageCategory"
                 name="ageCategory"
                 value={formData.ageCategory}
                 onChange={handleChange}
                 required
+                aria-required="true"
               >
                 <option value="">Select Age Category</option>
                 <option value="Stillborn">Stillborn</option>
@@ -1363,7 +1387,7 @@ function DataCapture() {
               </select>
             </FormGroup>
             <FormGroup>
-              <label>
+              <label htmlFor="firstName">
                 First Name{" "}
                 {formData.ageCategory !== "Stillborn" &&
                   formData.ageCategory !== "Infant"
@@ -1371,6 +1395,7 @@ function DataCapture() {
                   : ""}
               </label>
               <input
+                id="firstName"
                 name="firstName"
                 value={formData.firstName}
                 onChange={handleChange}
@@ -1379,11 +1404,16 @@ function DataCapture() {
                   formData.ageCategory !== "Stillborn" &&
                   formData.ageCategory !== "Infant"
                 }
+                aria-required={
+                  formData.ageCategory !== "Stillborn" &&
+                  formData.ageCategory !== "Infant"
+                }
               />
             </FormGroup>
             <FormGroup>
-              <label>Middle Name</label>
+              <label htmlFor="middleName">Middle Name</label>
               <input
+                id="middleName"
                 name="middleName"
                 value={formData.middleName}
                 onChange={handleChange}
@@ -1391,7 +1421,7 @@ function DataCapture() {
               />
             </FormGroup>
             <FormGroup>
-              <label>
+              <label htmlFor="lastName">
                 Last Name{" "}
                 {formData.ageCategory !== "Stillborn" &&
                   formData.ageCategory !== "Infant"
@@ -1399,6 +1429,7 @@ function DataCapture() {
                   : ""}
               </label>
               <input
+                id="lastName"
                 name="lastName"
                 value={formData.lastName}
                 onChange={handleChange}
@@ -1407,25 +1438,31 @@ function DataCapture() {
                   formData.ageCategory !== "Stillborn" &&
                   formData.ageCategory !== "Infant"
                 }
+                aria-required={
+                  formData.ageCategory !== "Stillborn" &&
+                  formData.ageCategory !== "Infant"
+                }
               />
             </FormGroup>
             <FormGroup>
-              <label>
+              <label htmlFor="idPassportNo">
                 ID / Passport No
                 {(formData.ageCategory === "Child" || formData.ageCategory === "Adult")
                   ? " *"
                   : ""}
               </label>
               <input
+                id="idPassportNo"
                 name="idPassportNo"
                 value={formData.idPassportNo}
                 onChange={handleChange}
                 placeholder="Enter ID or Passport number"
                 required={formData.ageCategory === "Child" || formData.ageCategory === "Adult"}
+                aria-required={formData.ageCategory === "Child" || formData.ageCategory === "Adult"}
               />
             </FormGroup>
             <FormGroup>
-              <label>
+              <label htmlFor="gender">
                 Gender{" "}
                 {formData.ageCategory !== "Stillborn" &&
                   formData.ageCategory !== "Infant"
@@ -1433,6 +1470,7 @@ function DataCapture() {
                   : ""}
               </label>
               <select
+                id="gender"
                 name="gender"
                 value={formData.gender}
                 onChange={handleChange}
@@ -1440,14 +1478,20 @@ function DataCapture() {
                   formData.ageCategory !== "Stillborn" &&
                   formData.ageCategory !== "Infant"
                 }
+                aria-required={
+                  formData.ageCategory !== "Stillborn" &&
+                  formData.ageCategory !== "Infant"
+                }
               >
+                <option value="">Select Gender</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
               </select>
             </FormGroup>
             <FormGroup>
-              <label>Nationality</label>
+              <label htmlFor="nationality">Nationality</label>
               <select
+                id="nationality"
                 name="nationality"
                 value={formData.nationality}
                 onChange={handleChange}
@@ -1461,7 +1505,7 @@ function DataCapture() {
               </select>
             </FormGroup>
             <FormGroup>
-              <label>
+              <label htmlFor="age">
                 Age{" "}
                 {formData.ageCategory !== "Stillborn" &&
                   formData.ageCategory !== "Infant"
@@ -1469,6 +1513,7 @@ function DataCapture() {
                   : ""}
               </label>
               <input
+                id="age"
                 type="number"
                 name="age"
                 value={formData.age}
@@ -1486,8 +1531,12 @@ function DataCapture() {
                 }
                 min="0"
                 disabled={formData.ageCategory === "Stillborn"}
-                style={formData.ageCategory === "Stillborn" ? { backgroundColor: "#f3f4f6", cursor: "not-allowed", opacity: 0.6 } : {}}
+                style={formData.ageCategory === "Stillborn" ? { backgroundColor: "#f3f4f6", opacity: 0.6 } : {}}
                 required={
+                  formData.ageCategory !== "Stillborn" &&
+                  formData.ageCategory !== "Infant"
+                }
+                aria-required={
                   formData.ageCategory !== "Stillborn" &&
                   formData.ageCategory !== "Infant"
                 }
@@ -1507,14 +1556,16 @@ function DataCapture() {
               )}
             </FormGroup>
             <FormGroup>
-              <label>Date of Death *</label>
+              <label htmlFor="dateOfDeath">Date of Death *</label>
               <ModernDatePicker
+                id="dateOfDeath"
                 value={formData.dateOfDeath}
                 onChange={handleChange}
                 name="dateOfDeath"
                 placeholder="Pick date of death"
                 maxDate={new Date()}
                 required
+                aria-required="true"
               />
               <HelperText>
                 <MdInfoOutline size={14} style={{ marginRight: "4px" }} />
@@ -1522,13 +1573,15 @@ function DataCapture() {
               </HelperText>
             </FormGroup>
             <FormGroup>
-              <label>Date of Burial *</label>
+              <label htmlFor="dateOfBurial">Date of Burial *</label>
               <ModernDatePicker
+                id="dateOfBurial"
                 value={formData.dateOfBurial}
                 onChange={handleChange}
                 name="dateOfBurial"
                 placeholder="Pick date of burial"
                 required
+                aria-required="true"
               />
             </FormGroup>
           </FormGrid>
@@ -1551,22 +1604,26 @@ function DataCapture() {
           </SectionTitle>
           <FormGrid>
             <FormGroup>
-              <label>Name of Next of Kin *</label>
+              <label htmlFor="nextOfKinName">Name of Next of Kin *</label>
               <input
+                id="nextOfKinName"
                 name="nextOfKinName"
                 value={formData.nextOfKinName}
                 onChange={handleChange}
                 placeholder="Enter next of kin name"
                 required
+                aria-required="true"
               />
             </FormGroup>
             <FormGroup>
-              <label>Relationship with Deceased *</label>
+              <label htmlFor="nextOfKinRelationship">Relationship with Deceased *</label>
               <select
+                id="nextOfKinRelationship"
                 name="nextOfKinRelationship"
                 value={formData.nextOfKinRelationship}
                 onChange={handleChange}
                 required
+                aria-required="true"
               >
                 <option value="">Select Relationship</option>
                 <option value="Spouse">Spouse</option>
@@ -1577,14 +1634,16 @@ function DataCapture() {
               </select>
             </FormGroup>
             <FormGroup>
-              <label>Next of Kin Contact *</label>
+              <label htmlFor="nextOfKinContact">Next of Kin Contact *</label>
               <input
+                id="nextOfKinContact"
                 type="tel"
                 name="nextOfKinContact"
                 value={formData.nextOfKinContact}
                 onChange={handleChange}
                 placeholder="e.g., 0712345678"
                 required
+                aria-required="true"
               />
               {formData.nextOfKinContact && (
                 <HelperText>
@@ -1598,13 +1657,15 @@ function DataCapture() {
               )}
             </FormGroup>
             <FormGroup>
-              <label>Next of Kin ID / Passport No *</label>
+              <label htmlFor="nextOfKinIdPassport">Next of Kin ID / Passport No *</label>
               <input
+                id="nextOfKinIdPassport"
                 name="nextOfKinIdPassport"
                 value={formData.nextOfKinIdPassport}
                 onChange={handleChange}
                 placeholder="Enter ID or Passport number"
                 required
+                aria-required="true"
               />
             </FormGroup>
           </FormGrid>
@@ -1623,93 +1684,105 @@ function DataCapture() {
           )}
           <FormGrid>
             <FormGroup>
-              <label>
+              <label htmlFor="burialPermitNumber">
                 Burial Permit Number
                 {formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant" ? " *" : ""}
               </label>
               <input
+                id="burialPermitNumber"
                 name="burialPermitNumber"
                 value={formData.burialPermitNumber}
                 onChange={handleChange}
                 placeholder="Enter permit number"
                 disabled={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant"}
-                style={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant" ? { backgroundColor: "#f3f4f6", cursor: "not-allowed", opacity: 0.6 } : {}}
+                style={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant" ? { backgroundColor: "#f3f4f6", opacity: 0.6 } : {}}
                 required={formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant"}
+                aria-required={formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant"}
               />
             </FormGroup>
             <FormGroup>
-              <label>
+              <label htmlFor="burialPermitDate">
                 Date of Burial Permit
                 {formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant" ? " *" : ""}
               </label>
               <ModernDatePicker
+                id="burialPermitDate"
                 value={formData.burialPermitDate}
                 onChange={handleChange}
                 name="burialPermitDate"
                 placeholder="Pick permit date"
                 disabled={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant"}
                 required={formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant"}
+                aria-required={formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant"}
               />
             </FormGroup>
             <FormGroup>
-              <label>
+              <label htmlFor="burialPermitIssuedBy">
                 Permit Issued By
                 {formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant" ? " *" : ""}
               </label>
               <input
+                id="burialPermitIssuedBy"
                 name="burialPermitIssuedBy"
                 value={formData.burialPermitIssuedBy}
                 onChange={handleChange}
                 placeholder="Enter issuer name/authority"
                 disabled={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant"}
-                style={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant" ? { backgroundColor: "#f3f4f6", cursor: "not-allowed", opacity: 0.6 } : {}}
+                style={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant" ? { backgroundColor: "#f3f4f6", opacity: 0.6 } : {}}
                 required={formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant"}
+                aria-required={formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant"}
               />
             </FormGroup>
             <FormGroup>
-              <label>
+              <label htmlFor="burialPermitIssuedByContact">
                 Issuer Contact Address
                 {formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant" ? " *" : ""}
               </label>
               <input
+                id="burialPermitIssuedByContact"
                 name="burialPermitIssuedByContact"
                 value={formData.burialPermitIssuedByContact}
                 onChange={handleChange}
                 placeholder="Enter issuer contact details"
                 disabled={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant"}
-                style={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant" ? { backgroundColor: "#f3f4f6", cursor: "not-allowed", opacity: 0.6 } : {}}
+                style={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant" ? { backgroundColor: "#f3f4f6", opacity: 0.6 } : {}}
                 required={formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant"}
+                aria-required={formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant"}
               />
             </FormGroup>
             <FormGroup>
-              <label>
+              <label htmlFor="burialPermitIssuedTo">
                 Permit Issued To
                 {formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant" ? " *" : ""}
               </label>
               <input
+                id="burialPermitIssuedTo"
                 name="burialPermitIssuedTo"
                 value={formData.burialPermitIssuedTo}
                 onChange={handleChange}
                 placeholder="Enter recipient name"
                 disabled={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant"}
-                style={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant" ? { backgroundColor: "#f3f4f6", cursor: "not-allowed", opacity: 0.6 } : {}}
+                style={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant" ? { backgroundColor: "#f3f4f6", opacity: 0.6 } : {}}
                 required={formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant"}
+                aria-required={formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant"}
               />
             </FormGroup>
             <FormGroup>
-              <label>
+              <label htmlFor="burialPermitIssuedToContact">
                 Recipient Contact Number
                 {formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant" ? " *" : ""}
               </label>
               <input
+                id="burialPermitIssuedToContact"
                 type="tel"
                 name="burialPermitIssuedToContact"
                 value={formData.burialPermitIssuedToContact}
                 onChange={handleChange}
                 placeholder="Enter recipient contact"
                 disabled={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant"}
-                style={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant" ? { backgroundColor: "#f3f4f6", cursor: "not-allowed", opacity: 0.6 } : {}}
+                style={formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant" ? { backgroundColor: "#f3f4f6", opacity: 0.6 } : {}}
                 required={formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant"}
+                aria-required={formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant"}
               />
               {formData.burialPermitIssuedToContact && formData.ageCategory !== "Stillborn" && formData.ageCategory !== "Infant" && (
                 <HelperText>
@@ -1732,16 +1805,18 @@ function DataCapture() {
           </SectionTitle>
           <FormGrid>
             <FormGroup>
-              <label>Location of Burial *</label>
+              <label htmlFor="burialLocation">Location of Burial *</label>
               <div style={{ display: "flex", gap: "8px", flexDirection: "column" }}>
                 {!showNewLocationInput ? (
                   <div style={{ display: "flex", gap: "8px" }}>
                     <select
+                      id="burialLocation"
                       name="burialLocation"
                       value={formData.burialLocation}
                       onChange={handleChange}
                       required
                       style={{ flex: 1 }}
+                      aria-required="true"
                     >
                       <option value="">Select Location</option>
                       {locationOptions.map((loc) => (
@@ -1774,37 +1849,77 @@ function DataCapture() {
                     )}
                   </div>
                 ) : (
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <input
-                      type="text"
-                      value={newLocationName}
-                      onChange={(e) => setNewLocationName(e.target.value)}
-                      placeholder="Enter new location name"
-                      style={{ flex: 1 }}
-                      autoFocus
-                    />
-                    <Button
-                      type="button"
-                      $variant="primary"
-                      onClick={handleAddNewLocation}
-                      disabled={!newLocationName.trim()}
-                    >
-                      Add
-                    </Button>
-                    <Button
-                      type="button"
-                      $variant="secondary"
-                      onClick={() => setShowNewLocationInput(false)}
-                    >
-                      Cancel
-                    </Button>
+                  <div style={{ display: "flex", gap: "12px", flexDirection: "column", background: theme.colors.gray50, padding: "16px", borderRadius: theme.borderRadius.md, border: `1px solid ${theme.colors.gray200}` }}>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <input
+                        type="text"
+                        value={newLocationName}
+                        onChange={(e) => setNewLocationName(e.target.value)}
+                        placeholder="Enter new location name"
+                        style={{ flex: 1 }}
+                        autoFocus
+                      />
+                    </div>
+                    <div style={{ display: "flex", gap: "12px" }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: "12px", color: theme.colors.gray600, display: "block", marginBottom: "4px" }}>Daytime Price</label>
+                        <input
+                          type="number"
+                          value={newLocationDaytimePrice}
+                          onChange={(e) => setNewLocationDaytimePrice(parseInt(e.target.value) || 0)}
+                          placeholder="Daytime Price"
+                        />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: "12px", color: theme.colors.gray600, display: "block", marginBottom: "4px" }}>Nighttime Price</label>
+                        <input
+                          type="number"
+                          value={newLocationNighttimePrice}
+                          onChange={(e) => setNewLocationNighttimePrice(parseInt(e.target.value) || 0)}
+                          placeholder="Nighttime Price"
+                        />
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                      <Button
+                        type="button"
+                        $variant="secondary"
+                        onClick={() => setShowNewLocationInput(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        $variant="primary"
+                        onClick={handleAddNewLocation}
+                        disabled={!newLocationName.trim()}
+                      >
+                        Save Location
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
             </FormGroup>
             <FormGroup>
-              <label>Primary Service</label>
+              <label htmlFor="burialTime">Time of Burial *</label>
+              <select
+                id="burialTime"
+                name="burialTime"
+                value={formData.burialTime}
+                onChange={handleChange}
+                required
+                aria-required="true"
+              >
+                <option value="">Select Time</option>
+                <option value="Daytime">Daytime</option>
+                <option value="Nighttime">Nighttime</option>
+              </select>
+            </FormGroup>
+            <FormGroup>
+              <label htmlFor="primaryService">Primary Service</label>
               <input
+                id="primaryService"
                 name="primaryService"
                 value={formData.primaryService}
                 onChange={handleChange}
@@ -1813,14 +1928,17 @@ function DataCapture() {
               />
             </FormGroup>
             <FormGroup>
-              <label>Amount Payable for Burial</label>
+              <label htmlFor="amountPaidBurial">Amount Payable for Burial</label>
               <input
+                id="amountPaidBurial"
                 type="number"
                 name="amountPaidBurial"
                 value={formData.amountPaidBurial}
                 onChange={handleChange}
-                placeholder="Enter amount"
+                placeholder="Auto-calculated"
                 min="0"
+                readOnly
+                style={{ backgroundColor: "#f3f4f6", color: theme.colors.textPrimary, fontWeight: 600 }}
               />
             </FormGroup>
             {/* 
@@ -1885,7 +2003,7 @@ function DataCapture() {
           </SectionTitle>
           <FormGrid>
             <FormGroup>
-              <label>
+              <label htmlFor="mpesaRefNo">
                 Mpesa Ref No.
                 <Tooltip
                   content="M-Pesa is a mobile money service used mainly in Kenya and Tanzania that allows people to send, receive, and pay using their phones without a bank account. Must be exactly 10 alphanumeric characters."
@@ -1899,6 +2017,7 @@ function DataCapture() {
                 </Tooltip>
               </label>
               <input
+                id="mpesaRefNo"
                 name="mpesaRefNo"
                 value={formData.mpesaRefNo}
                 onChange={handleChange}
@@ -1917,16 +2036,18 @@ function DataCapture() {
               )}
             </FormGroup>
             <FormGroup>
-              <label>Receipt No. *</label>
+              <label htmlFor="receiptNo">Receipt No. *</label>
               <div
                 style={{ display: "flex", gap: "8px", alignItems: "center" }}
               >
                 <input
+                  id="receiptNo"
                   name="receiptNo"
                   value={formData.receiptNo}
                   readOnly
                   placeholder="Auto-generated"
                   required
+                  aria-required="true"
                   style={{
                     fontWeight: 600,
                     fontSize: "16px",
@@ -2066,8 +2187,9 @@ function DataCapture() {
           </SectionTitle>
           <FormGroup>
             <RadioGroup>
-              <label>
+              <label htmlFor="statusPending">
                 <input
+                  id="statusPending"
                   type="radio"
                   name="status"
                   value="Pending"
@@ -2076,8 +2198,9 @@ function DataCapture() {
                 />
                 <MdSchedule size={18} /> Pending
               </label>
-              <label>
+              <label htmlFor="statusVerified">
                 <input
+                  id="statusVerified"
                   type="radio"
                   name="status"
                   value="Verified"
@@ -2086,8 +2209,9 @@ function DataCapture() {
                 />
                 <MdVerified size={18} /> Verified
               </label>
-              <label>
+              <label htmlFor="statusRejected">
                 <input
+                  id="statusRejected"
                   type="radio"
                   name="status"
                   value="Rejected"
@@ -2101,13 +2225,15 @@ function DataCapture() {
 
           {formData.status === "Rejected" && (
             <FormGroup>
-              <label>Rejection Reason *</label>
+              <label htmlFor="rejectionReason">Rejection Reason *</label>
               <textarea
+                id="rejectionReason"
                 name="rejectionReason"
                 value={formData.rejectionReason}
                 onChange={handleChange}
                 placeholder="Enter the reason for rejection..."
                 required
+                aria-required="true"
                 rows={4}
                 style={{
                   width: "100%",
@@ -2185,32 +2311,65 @@ function DataCapture() {
         >
           <div style={{ maxHeight: "400px", overflowY: "auto" }}>
             <p style={{ fontSize: "14px", color: theme.colors.gray600, marginBottom: "16px" }}>
-              Only custom locations can be deleted. Default system locations (Block A, Main, etc.) are protected.
+              Only custom locations can be deleted. System locations are fetched from the live database.
             </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {locationData.map((loc) => (
                 <div
-                  key={loc.id}
+                  key={loc._id || loc.id}
                   style={{
                     display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "12px",
+                    flexDirection: "column",
+                    gap: "8px",
+                    padding: "16px",
                     background: theme.colors.gray50,
                     borderRadius: theme.borderRadius.md,
                     border: `1px solid ${theme.colors.gray200}`
                   }}
                 >
-                  <span style={{ fontWeight: 500 }}>{loc.name}</span>
-                  {!["Block A", "Main", "Block B", "Lan'gata"].includes(loc.name) && (
-                    <Button
-                      $variant="danger"
-                      $size="small"
-                      onClick={() => handleDeleteLocation(loc.id, loc.name)}
-                      style={{ padding: "6px" }}
-                    >
-                      <MdDelete size={18} />
-                    </Button>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontWeight: 600, fontSize: "16px" }}>{loc.name}</span>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      {editingLocation?._id === loc._id ? (
+                        <Button $variant="primary" $size="small" onClick={handleUpdateLocation}>Save</Button>
+                      ) : (
+                        <Button $variant="secondary" $size="small" onClick={() => setEditingLocation({ ...loc })}>Edit Prices</Button>
+                      )}
+                        <Button
+                          $variant="danger"
+                          $size="small"
+                          onClick={() => handleDeleteLocation(loc._id || loc.id, loc.name)}
+                          style={{ padding: "6px" }}
+                        >
+                          <MdDelete size={18} />
+                        </Button>
+                    </div>
+                  </div>
+
+                  {editingLocation?._id === loc._id ? (
+                    <div style={{ display: "flex", gap: "12px" }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: "12px", color: theme.colors.gray600 }}>Daytime Price</label>
+                        <input
+                          type="number"
+                          value={editingLocation.daytimePrice}
+                          onChange={(e) => setEditingLocation({ ...editingLocation, daytimePrice: parseInt(e.target.value) || 0 })}
+                        />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: "12px", color: theme.colors.gray600 }}>Nighttime Price</label>
+                        <input
+                          type="number"
+                          value={editingLocation.nighttimePrice}
+                          onChange={(e) => setEditingLocation({ ...editingLocation, nighttimePrice: parseInt(e.target.value) || 0 })}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", gap: "24px", fontSize: "14px", color: theme.colors.gray700 }}>
+                      <span><strong>Daytime:</strong> KES {loc.daytimePrice?.toLocaleString()}</span>
+                      <span><strong>Nighttime:</strong> KES {loc.nighttimePrice?.toLocaleString()}</span>
+                    </div>
                   )}
                 </div>
               ))}
