@@ -319,9 +319,10 @@ const CalendarIcon = styled.div`
   }
 `;
 
-const CustomInput = forwardRef(({ value, onClick, placeholder }, ref) => (
+const CustomInput = forwardRef(({ value, onClick, placeholder, id }, ref) => (
   <div style={{ position: 'relative', width: '100%' }}>
     <StyledInput
+      id={id}
       onClick={onClick}
       value={value}
       placeholder={placeholder}
@@ -341,7 +342,7 @@ const CustomInput = forwardRef(({ value, onClick, placeholder }, ref) => (
 
 CustomInput.displayName = 'CustomInput';
 
-function ModernDatePicker({ value, onChange, name, placeholder = "dd - mm - yyyy", ...props }) {
+function ModernDatePicker({ value, onChange, name, placeholder = "dd - mm - yyyy", id, ...props }) {
   // Use today as default if no value is provided
   const selectedDate = value ? new Date(value) : new Date();
 
@@ -381,7 +382,7 @@ function ModernDatePicker({ value, onChange, name, placeholder = "dd - mm - yyyy
       <DatePicker
         selected={selectedDate}
         onChange={handleChange}
-        customInput={<CustomInput placeholder={placeholder} />}
+        customInput={<CustomInput placeholder={placeholder} id={id} />}
         dateFormat="dd/MM/yyyy"
         showPopperArrow={false}
         showMonthDropdown

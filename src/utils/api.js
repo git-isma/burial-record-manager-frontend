@@ -63,6 +63,7 @@ export const API_ENDPOINTS = {
     // Public Records Endpoints
     PUBLIC_RECORDS: {
         LIST: '/public/records',
+        LATEST_APPLICANT_ID: '/public/latest-applicant-id',
     },
 
     // Notifications Endpoints (currently disabled)
@@ -76,6 +77,7 @@ export const API_ENDPOINTS = {
     LOCATIONS: {
         LIST: '/locations',
         CREATE: '/locations',
+        UPDATE: (id) => `/locations/${id}`,
         DELETE: (id) => `/locations/${id}`,
     },
 
@@ -136,6 +138,7 @@ export const apiService = {
     getPublicRecords: (params) => axios.get(API_ENDPOINTS.PUBLIC_RECORDS.LIST, { params }),
     getPublicRecord: (params) => axios.get(API_ENDPOINTS.PUBLIC_RECORDS.LIST, { params: { id } }),
     verifyPublicRecord: (id, data) => axios.put(API_ENDPOINTS.RECORDS.VERIFY(id), data),
+    getLatestApplicantId: () => axios.get(API_ENDPOINTS.PUBLIC_RECORDS.LATEST_APPLICANT_ID),
 
     // Upload
     getPresignedUrl: (fileName, fileType, folder, recordNumber) => {
@@ -146,7 +149,8 @@ export const apiService = {
 
     // Locations
     getLocations: () => axios.get(API_ENDPOINTS.LOCATIONS.LIST),
-    createLocation: (name) => axios.post(API_ENDPOINTS.LOCATIONS.CREATE, { name }),
+    createLocation: (data) => axios.post(API_ENDPOINTS.LOCATIONS.CREATE, data),
+    updateLocation: (id, data) => axios.put(API_ENDPOINTS.LOCATIONS.UPDATE(id), data),
     deleteLocation: (id) => axios.delete(API_ENDPOINTS.LOCATIONS.DELETE(id)),
 
     // Receipt Number

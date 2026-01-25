@@ -30,8 +30,6 @@ const GlobalStyles = createGlobalStyle`
     
     /* Mobile optimizations */
     -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    user-select: none;
     
     /* Prevent zoom on input focus on iOS */
     @media (max-width: 768px) {
@@ -41,8 +39,6 @@ const GlobalStyles = createGlobalStyle`
 
   /* Allow text selection on interactive elements */
   button, a, input, select, textarea {
-    -webkit-user-select: text;
-    user-select: text;
   }
 
   /* Improve touch targets on mobile */

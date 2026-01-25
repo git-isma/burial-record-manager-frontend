@@ -284,7 +284,6 @@ export const FormGroup = styled.div`
     &:disabled {
       background: #f9fafb;
       color: ${theme.colors.gray500};
-      cursor: not-allowed;
       border-color: ${theme.colors.gray200};
 
       body.dark-theme & {
