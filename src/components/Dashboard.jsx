@@ -742,36 +742,36 @@ Status: ${record.status}
                   ))}
                 </defs>
                 <CartesianGrid strokeDasharray="4 4" vertical={false} stroke={isDarkMode ? 'rgba(255,255,255,0.05)' : '#f3f4f6'} />
-                <XAxis 
-                  dataKey="month" 
-                  axisLine={false} 
-                  tickLine={false} 
+                <XAxis
+                  dataKey="month"
+                  axisLine={false}
+                  tickLine={false}
                   tick={{ fill: isDarkMode ? '#555' : '#9ca3af', fontSize: 11, fontWeight: 500 }}
                   dy={10}
                 />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
                   tick={{ fill: isDarkMode ? '#555' : '#9ca3af', fontSize: 11, fontWeight: 500 }}
                   allowDecimals={false}
                 />
                 <Tooltip cursor={{ fill: isDarkMode ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }} content={<CustomTooltip isDarkMode={isDarkMode} />} />
-                <Legend 
-                  verticalAlign="top" 
-                  align="right" 
-                  iconType="circle" 
+                <Legend
+                  verticalAlign="top"
+                  align="right"
+                  iconType="circle"
                   iconSize={6}
-                  wrapperStyle={{ 
+                  wrapperStyle={{
                     paddingBottom: '32px',
                     fontSize: '12px',
                     color: isDarkMode ? '#888' : '#4b5563'
-                  }} 
+                  }}
                 />
                 {locations.map((location, index) => (
-                  <Bar 
-                    key={location} 
-                    dataKey={location} 
-                    fill={`url(#barGradient-${index % COLORS.length})`} 
+                  <Bar
+                    key={location}
+                    dataKey={location}
+                    fill={`url(#barGradient-${index % COLORS.length})`}
                     radius={[6, 6, 0, 0]}
                     maxBarSize={12}
                     animationDuration={1500}
@@ -857,7 +857,7 @@ Status: ${record.status}
       </RecentUploadsSection>
 
       <div style={{ textAlign: 'center', padding: '24px', color: isDarkMode ? '#6d6d6d' : theme.colors.gray500, fontSize: '12px' }}>
-        © 2025 Burial Record Manager. All rights reserved.
+        © 2025 Burial Legacy Application. All rights reserved.
       </div>
     </DashboardContainer>
   );

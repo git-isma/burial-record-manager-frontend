@@ -36,6 +36,7 @@ import {
 } from "react-icons/md";
 import { InlineSpinner } from "./Spinner";
 import Tooltip from "./Tooltip";
+import { countries } from "../utils/countries";
 
 const SectionTitle = styled.h3`
   margin-top: ${(props) => (props.$first ? "0" : theme.spacing.xl)};
@@ -641,7 +642,7 @@ function DataCapture() {
     amountPaidTertiary: 0,
     mpesaRefNo: "",
     receiptNo: "",
-    status: "Pending",
+    status: "Verification Pending",
     rejectionReason: "",
     dateOfBurial: getCurrentDate(),
     nextOfKinRelationship: "",
@@ -668,30 +669,6 @@ function DataCapture() {
   const [editingLocation, setEditingLocation] = useState(null);
  // Array of objects {id, name}
 
-  // Countries list
-  const countries = [
-    "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Argentina", "Armenia", "Australia",
-    "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium",
-    "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei",
-    "Bulgaria", "Burkina Faso", "Burundi", "Cambodia", "Cameroon", "Canada", "Cape Verde", "Central African Republic",
-    "Chad", "Chile", "China", "Colombia", "Comoros", "Congo", "Costa Rica", "Croatia", "Cuba", "Cyprus",
-    "Czech Republic", "Czechia", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "East Timor", "Ecuador",
-    "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji",
-    "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala",
-    "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran",
-    "Iraq", "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati",
-    "Kosovo", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein",
-    "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania",
-    "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar",
-    "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia",
-    "Norway", "Oman", "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines",
-    "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa",
-    "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia",
-    "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden",
-    "Switzerland", "Syria", "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago",
-    "Tunisia", "Turkey", "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay",
-    "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
-  ];
 
   const isFormValid = () => {
     const isExempt = formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant";
@@ -714,8 +691,10 @@ function DataCapture() {
       formData.receiptNo,
     ];
 
+    baseRequired.push(formData.gender, formData.age, formData.nationality);
+
     if (!isExempt) {
-      baseRequired.push(formData.firstName, formData.lastName, formData.gender, formData.age);
+      baseRequired.push(formData.firstName, formData.lastName);
     }
 
     if (formData.status === "Rejected") {
@@ -865,54 +844,18 @@ function DataCapture() {
 
   const generateRecordNumberPreview = async () => {
     try {
-      const year = new Date().getFullYear();
-
-      // Get all records for the current year to find the highest number
-      // Using a large limit to ensure we get all records for the year
-      const response = await apiService.getRecords({
-        search: `BR-${year}`,
-        limit: 10000, // Large limit to get all records for current year
-      });
-
-      let nextNumber = 1;
-      if (response.data.records && response.data.records.length > 0) {
-        // Extract all record numbers for current year and find the highest
-        const recordNumbers = response.data.records
-          .map((r) => {
-            // Match pattern: BR-YYYY-NNNNN (e.g., BR-2025-00001)
-            const match = r.recordNumber?.match(/BR-(\d{4})-(\d{5})/);
-            if (match && match[1] === String(year)) {
-              return parseInt(match[2], 10);
-            }
-            return 0;
-          })
-          .filter((n) => n > 0);
-
-        if (recordNumbers.length > 0) {
-          // Get the highest number and add 1
-          const maxNumber = Math.max(...recordNumbers);
-          nextNumber = maxNumber + 1;
-          console.log(
-            `📋 Found ${recordNumbers.length} records for ${year}. Highest: ${maxNumber}. Next: ${nextNumber}`
-          );
-        } else {
-          console.log(
-            `📋 No records found for ${year}. Starting with: ${nextNumber}`
-          );
-        }
+      console.log('🔄 Fetching latest record number from server...');
+      const response = await apiService.getLatestRecordNumber();
+      
+      if (response.data && response.data.recordNumber) {
+        console.log(`✅ Generated record number: ${response.data.recordNumber}`);
+        setFormData((prev) => ({ ...prev, recordNumber: response.data.recordNumber }));
       } else {
-        console.log(`📋 No records in database. Starting with: ${nextNumber}`);
+        throw new Error('Invalid response from server');
       }
-
-      // Format: BR-YYYY-NNNNN (e.g., BR-2025-00001)
-      const paddedNumber = String(nextNumber).padStart(5, "0");
-      const newRecordNumber = `BR-${year}-${paddedNumber}`;
-
-      console.log(`✅ Generated record number: ${newRecordNumber}`);
-      setFormData((prev) => ({ ...prev, recordNumber: newRecordNumber }));
     } catch (err) {
       console.error("❌ Error generating record number:", err);
-      // Fallback: generate with timestamp to ensure uniqueness
+      // Fallback: generate with timestamp to ensure uniqueness only as last resort
       const year = new Date().getFullYear();
       const timestamp = Date.now().toString().slice(-5);
       const fallbackNumber = `BR-${year}-${timestamp}`;
@@ -923,22 +866,15 @@ function DataCapture() {
 
   const generateReceiptNumber = async () => {
     try {
-      const year = new Date().getFullYear();
-
-      // Get the latest receipt number from the API
-      const res = await apiService.getLatestReceiptNo();
-      let latestNo = res.data?.latestReceiptNo || "0000";
-
-      // Extract numeric part and increment
-      const numericPart = parseInt(latestNo.replace(/\D/g, ""), 10) || 0;
-      const nextNumber = numericPart + 1;
-
-      // Format: RCP-YYYY-NNNN (e.g., RCP-2026-0001)
-      const paddedNumber = String(nextNumber).padStart(4, "0");
-      const newReceiptNo = `RCP-${year}-${paddedNumber}`;
-
-      console.log(`✅ Generated receipt number: ${newReceiptNo}`);
-      setFormData((prev) => ({ ...prev, receiptNo: newReceiptNo }));
+      console.log('🔄 Fetching latest receipt number from server...');
+      const response = await apiService.getLatestReceiptNumber();
+      
+      if (response.data && response.data.receiptNo) {
+        console.log(`✅ Generated receipt number: ${response.data.receiptNo}`);
+        setFormData((prev) => ({ ...prev, receiptNo: response.data.receiptNo }));
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (err) {
       console.error("❌ Error generating receipt number:", err);
       // Fallback: start from RCP-YYYY-0001
@@ -977,8 +913,8 @@ function DataCapture() {
         receiptNo: record.receiptNo || "",
         status:
           record.status === "Pending"
-            ? "Pending Verification"
-            : record.status || "Pending Verification",
+            ? "Verification Pending"
+            : record.status || "Verification Pending",
         rejectionReason: record.rejectionReason || "",
         dateOfBurial: record.dateOfBurial ? record.dateOfBurial.split("T")[0] : "",
         nextOfKinRelationship: record.nextOfKinRelationship || "",
@@ -1008,9 +944,10 @@ function DataCapture() {
     if (name === "status" && value !== "Rejected") {
       setFormData({ ...formData, [name]: value, rejectionReason: "" });
     } else if (name === "ageCategory") {
-      // Auto-set age to 1 when infant is selected
       if (value === "Infant") {
         setFormData({ ...formData, [name]: value, age: "1" });
+      } else if (value === "Stillborn") {
+        setFormData({ ...formData, [name]: value, age: "0" });
       } else {
         setFormData({ ...formData, [name]: value });
       }
@@ -1208,8 +1145,12 @@ function DataCapture() {
           (value && value !== "") ||
           (key === "rejectionReason" && formData.status === "Rejected")
         ) {
-          // Map "Pending Verification" to "Pending" for API
-          recordData[key] = value;
+          // Map "Verification Pending" to "Pending" for API
+          if (key === "status" && value === "Verification Pending") {
+            recordData[key] = "Pending";
+          } else {
+            recordData[key] = value;
+          }
         }
       });
 
@@ -1248,13 +1189,14 @@ function DataCapture() {
           amountPaidTertiary: "",
           mpesaRefNo: "",
           receiptNo: "",
-          status: "Pending",
+          status: "Verification Pending",
           rejectionReason: "",
         });
         setFiles([]);
         setTermsAccepted(false);
         setAutoSaveStatus("");
         generateRecordNumberPreview();
+        generateReceiptNumber();
       }
     } catch (err) {
       error(err.response?.data?.msg || "Error saving record");
@@ -1290,7 +1232,7 @@ function DataCapture() {
       amountPaidTertiary: "",
       mpesaRefNo: "",
       receiptNo: "",
-      status: "Pending",
+      status: "Verification Pending",
       rejectionReason: "",
     });
     setFiles([]);
@@ -1463,25 +1405,15 @@ function DataCapture() {
             </FormGroup>
             <FormGroup>
               <label htmlFor="gender">
-                Gender{" "}
-                {formData.ageCategory !== "Stillborn" &&
-                  formData.ageCategory !== "Infant"
-                  ? "*"
-                  : ""}
+                Gender *
               </label>
               <select
                 id="gender"
                 name="gender"
                 value={formData.gender}
                 onChange={handleChange}
-                required={
-                  formData.ageCategory !== "Stillborn" &&
-                  formData.ageCategory !== "Infant"
-                }
-                aria-required={
-                  formData.ageCategory !== "Stillborn" &&
-                  formData.ageCategory !== "Infant"
-                }
+                required
+                aria-required="true"
               >
                 <option value="">Select Gender</option>
                 <option value="Male">Male</option>
@@ -1489,12 +1421,14 @@ function DataCapture() {
               </select>
             </FormGroup>
             <FormGroup>
-              <label htmlFor="nationality">Nationality</label>
+              <label htmlFor="nationality">Nationality *</label>
               <select
                 id="nationality"
                 name="nationality"
                 value={formData.nationality}
                 onChange={handleChange}
+                required
+                aria-required="true"
               >
                 <option value="">Select Nationality</option>
                 {countries.map((country) => (
@@ -1506,11 +1440,7 @@ function DataCapture() {
             </FormGroup>
             <FormGroup>
               <label htmlFor="age">
-                Age{" "}
-                {formData.ageCategory !== "Stillborn" &&
-                  formData.ageCategory !== "Infant"
-                  ? "*"
-                  : ""}
+                Age *
               </label>
               <input
                 id="age"
@@ -1532,14 +1462,8 @@ function DataCapture() {
                 min="0"
                 disabled={formData.ageCategory === "Stillborn"}
                 style={formData.ageCategory === "Stillborn" ? { backgroundColor: "#f3f4f6", opacity: 0.6 } : {}}
-                required={
-                  formData.ageCategory !== "Stillborn" &&
-                  formData.ageCategory !== "Infant"
-                }
-                aria-required={
-                  formData.ageCategory !== "Stillborn" &&
-                  formData.ageCategory !== "Infant"
-                }
+                required
+                aria-required="true"
               />
               {formData.ageCategory && (
                 <HelperText>
@@ -2192,11 +2116,11 @@ function DataCapture() {
                   id="statusPending"
                   type="radio"
                   name="status"
-                  value="Pending"
-                  checked={formData.status === "Pending"}
+                  value="Verification Pending"
+                  checked={formData.status === "Verification Pending"}
                   onChange={handleChange}
                 />
-                <MdSchedule size={18} /> Pending
+                <MdSchedule size={18} /> Verification Pending
               </label>
               <label htmlFor="statusVerified">
                 <input
@@ -2261,7 +2185,7 @@ function DataCapture() {
               onChange={(e) => setTermsAccepted(e.target.checked)}
             />
             <label htmlFor="termsAccepted">
-              <strong>Declaration:</strong> I hereby declare that the information provided in this burial record application is true and accurate to the best of my knowledge. I understand that providing false information may lead to legal action and the cancellation of this record. I agree to the <strong>Terms and Conditions</strong> of the ISMA Burial Record Management System.
+              <strong>Declaration:</strong> I hereby declare that the information provided in this burial record application is true and accurate to the best of my knowledge. I understand that providing false information may lead to legal action and the cancellation of this record. I agree to the <strong>Terms and Conditions</strong> of the <strong>Islamia School & Mosque Association</strong> Burial Legacy Application.
             </label>
           </TermsContainer>
 

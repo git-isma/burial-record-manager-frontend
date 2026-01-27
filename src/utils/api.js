@@ -46,6 +46,8 @@ export const API_ENDPOINTS = {
         DELETE: (id) => `/records/${id}`,
         BULK_DELETE: '/records',
         VERIFY: (id) => `/records/verify-public/${id}`,
+        LATEST_NUMBER: '/records/latest-number',
+        LATEST_RECEIPT_NUMBER: '/records/latest-receipt-number',
     },
 
     // Reports & Analytics Endpoints
@@ -155,6 +157,8 @@ export const apiService = {
 
     // Receipt Number
     getLatestReceiptNo: () => axios.get(API_ENDPOINTS.RECEIPT.LATEST),
+    getLatestRecordNumber: () => axios.get(API_ENDPOINTS.RECORDS.LATEST_NUMBER),
+    getLatestReceiptNumber: () => axios.get(API_ENDPOINTS.RECORDS.LATEST_RECEIPT_NUMBER),
 };
 
 export default apiService;

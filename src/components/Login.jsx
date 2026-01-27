@@ -355,11 +355,11 @@ function Login({ onLogin }) {
       <LoginCard>
         <Logo>
           <div className="logo-image">
-            <img src={ismaLogo} alt="ISMA Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            <img src={ismaLogo} alt="Islamia School & Mosque Association Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <div className="text-container">
             <h1>Islamia School &<br />Mosque Association</h1>
-            <p>Burial Record Manager</p>
+            <p>Burial Legacy Application</p>
           </div>
         </Logo>
 

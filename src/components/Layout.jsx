@@ -111,8 +111,8 @@ const SidebarHeader = styled.div`
       gap: 16px;
       
       img {
-        width: 70px;
-        height: 70px;
+        width: 100px;
+        height: 100px;
         object-fit: contain;
         background: white;
         border-radius: 12px;
@@ -126,7 +126,7 @@ const SidebarHeader = styled.div`
         gap: 4px;
 
         h2 {
-          font-size: 18px;
+          font-size: 16px;
           font-weight: 900;
           color: #6366f1; /* Vibrant blue/purple */
           margin: 0;
@@ -530,8 +530,8 @@ function Layout({ user, onLogout }) {
           <div className="logo-container">
             <img src={ismaLogo} alt="Logo" />
             <div className="brand-text">
-              <h2>BURIAL RECORDS</h2>
-              <p>ISMA LEGACY SYSTEM</p>
+              <h2>Islamia School & Mosque Association</h2>
+              <p>BURIAL LEGACY APPLICATION</p>
             </div>
           </div>
         </SidebarHeader>
@@ -603,8 +603,8 @@ function Layout({ user, onLogout }) {
       <MainContent>
         <TopHeader>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <img src={ismaLogo} alt="Logo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} className="mobile-only-logo" />
-            <HeaderTitle>Burial Record Manager</HeaderTitle>
+            <img src={ismaLogo} alt="Logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} className="mobile-only-logo" />
+            <HeaderTitle>Burial Legacy Application - Data Capture & Management</HeaderTitle>
           </div>
           <UserSection>
             <HeaderActionButton onClick={toggleTheme} title={getThemeTitle()}>
