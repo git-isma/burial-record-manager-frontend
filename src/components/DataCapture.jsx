@@ -1154,7 +1154,7 @@ function DataCapture() {
         }
       });
 
-      recordData.attachments = attachments;
+      recordData.attachments = [...existingAttachments, ...attachments];
 
       if (editId) {
         // Update existing record
