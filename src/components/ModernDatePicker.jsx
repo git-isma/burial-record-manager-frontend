@@ -298,6 +298,19 @@ const StyledInput = styled.input`
   &:read-only {
     cursor: pointer;
   }
+
+  &:disabled {
+    background: #f3f4f6;
+    cursor: not-allowed;
+    color: #9ca3af;
+    border-color: #e5e7eb;
+    
+    body.dark-theme & {
+      background: #1f1f1f;
+      border-color: #3d3d3d;
+      color: #4d4d4d;
+    }
+  }
 `;
 
 const CalendarIcon = styled.div`
@@ -319,15 +332,16 @@ const CalendarIcon = styled.div`
   }
 `;
 
-const CustomInput = forwardRef(({ value, onClick, placeholder, id }, ref) => (
+const CustomInput = forwardRef(({ value, onClick, placeholder, id, disabled }, ref) => (
   <div style={{ position: 'relative', width: '100%' }}>
     <StyledInput
       id={id}
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
       value={value}
       placeholder={placeholder}
       readOnly
       ref={ref}
+      disabled={disabled}
     />
     <CalendarIcon>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -382,7 +396,7 @@ function ModernDatePicker({ value, onChange, name, placeholder = "dd - mm - yyyy
       <DatePicker
         selected={selectedDate}
         onChange={handleChange}
-        customInput={<CustomInput placeholder={placeholder} id={id} />}
+        customInput={<CustomInput placeholder={placeholder} id={id} disabled={props.disabled} />}
         dateFormat="dd/MM/yyyy"
         showPopperArrow={false}
         showMonthDropdown

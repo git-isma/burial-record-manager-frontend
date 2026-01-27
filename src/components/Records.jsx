@@ -19,14 +19,15 @@ const RecordsContainer = styled.div`
 
 const FilterSection = styled(Card)`
   margin-bottom: ${theme.spacing.xl};
-  position: relative;
-  z-index: 50;
+  /* Removed z-index: 50 to prevent overlapping with sticky header */
   
   h3 { 
-    font-size: 18px; 
+    font-size: 16px; 
     font-weight: 700; 
     color: ${theme.colors.gray900}; 
     margin: 0 0 ${theme.spacing.lg} 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 
     body.dark-theme & {
       color: #e5e5e5;
@@ -52,6 +53,8 @@ const FiltersGrid = styled.div`
 const FormGroup = styled.div`
   display: flex;
   flex-direction: column;
+  position: relative; /* Ensure inputs like datepicker can position popups */
+  
   label { 
     font-size: 13px; 
     font-weight: 500; 
@@ -70,6 +73,7 @@ const FormGroup = styled.div`
     color: ${theme.colors.textPrimary};
     background: white;
     transition: all ${theme.transitions.fast};
+    width: 100%;
 
     body.dark-theme & {
       background: #2d2d2d;
@@ -99,13 +103,24 @@ const FormGroup = styled.div`
 const SearchGroup = styled(FormGroup)`
   position: relative;
   input { padding-left: 36px; }
-  &::before { content: '🔍'; position: absolute; left: 12px; bottom: 11px; font-size: 14px; }
+  &::before { 
+    content: ''; 
+    position: absolute; 
+    left: 12px; 
+    bottom: 12px; 
+    width: 16px; 
+    height: 16px; 
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" fill="%239ca3af" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>'); 
+    background-repeat: no-repeat;
+  }
 `;
 
 const FilterButtons = styled.div`
   display: flex;
   gap: ${theme.spacing.sm};
   flex-direction: column;
+  justify-content: flex-start;
+  margin-top: ${theme.spacing.sm};
 
   @media (min-width: 640px) {
     flex-direction: row;
@@ -451,31 +466,48 @@ function Records({ user }) {
   const navigate = useNavigate();
   const { formatDate } = useSettings();
   const [records, setRecords] = useState([]);
-  const [filters, setFilters] = useState({ 
-    search: '', 
-    burialLocation: '', 
-    status: '', 
-    gender: '', 
-    dateRange: new Date().toISOString().split('T')[0] 
+  const [locations, setLocations] = useState([]);
+  const [filters, setFilters] = useState({
+    search: '',
+    burialLocation: '',
+    status: '',
+    gender: '',
+    dateRange: new Date().toISOString().split('T')[0]
   });
   const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, total: 0 });
   const [loading, setLoading] = useState(false);
   const [selectedRecords, setSelectedRecords] = useState([]);
   const [bulkDeleteModal, setBulkDeleteModal] = useState({ isOpen: false });
 
-  useEffect(() => { fetchRecords(); }, []);
+  useEffect(() => { 
+    fetchRecords(); 
+    fetchLocations();
+  }, []);
+
+  const fetchLocations = async () => {
+    try {
+      const res = await apiService.getLocations();
+      if (Array.isArray(res.data)) {
+        setLocations(res.data);
+      } else if (res.data.success) {
+        setLocations(res.data.data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching locations:', err);
+    }
+  };
   useEffect(() => { fetchRecords(); }, [pagination.currentPage]);
 
   const fetchRecords = async () => {
     setLoading(true);
     try {
       const params = { ...filters, page: pagination.currentPage, limit: 10 };
-      
+
       // If user is data entry, only show their records
       if (user?.role === 'data_entry') {
         params.createdBy = user._id;
       }
-      
+
       const res = await apiService.getRecords(params);
       setRecords(res.data.records || []);
       setPagination({ currentPage: res.data.currentPage || 1, totalPages: res.data.totalPages || 1, total: res.data.total || 0 });
@@ -490,16 +522,16 @@ function Records({ user }) {
 
   const handleFilterChange = (e) => { setFilters({ ...filters, [e.target.name]: e.target.value }); };
   const applyFilters = () => { setPagination({ ...pagination, currentPage: 1 }); fetchRecords(); };
-  const resetFilters = () => { 
-    setFilters({ 
-      search: '', 
-      burialLocation: '', 
-      status: '', 
-      gender: '', 
-      dateRange: new Date().toISOString().split('T')[0] 
-    }); 
-    setPagination({ ...pagination, currentPage: 1 }); 
-    setTimeout(fetchRecords, 100); 
+  const resetFilters = () => {
+    setFilters({
+      search: '',
+      burialLocation: '',
+      status: '',
+      gender: '',
+      dateRange: new Date().toISOString().split('T')[0]
+    });
+    setPagination({ ...pagination, currentPage: 1 });
+    setTimeout(fetchRecords, 100);
   };
   const handleView = (id) => { navigate(`/document/${id}`); };
   const handleEdit = (id) => { navigate(`/data-capture?edit=${id}`); };
@@ -582,10 +614,11 @@ function Records({ user }) {
             <label>Burial Location</label>
             <select name="burialLocation" value={filters.burialLocation} onChange={handleFilterChange}>
               <option value="">All Locations</option>
-              <option value="Block A">Block A</option>
-              <option value="Main">Main</option>
-              <option value="Block B">Block B</option>
-              <option value="Lan'gata">Lan'gata</option>
+              {locations.map((loc) => (
+                <option key={loc._id} value={loc.name}>
+                  {loc.name}
+                </option>
+              ))}
             </select>
           </FormGroup>
           <FormGroup>
@@ -600,7 +633,7 @@ function Records({ user }) {
             <label>Status</label>
             <select name="status" value={filters.status} onChange={handleFilterChange}>
               <option value="">Select Status</option>
-              <option value="Pending">Pending</option>
+              <option value="Pending">Verification Pending</option>
               <option value="Verified">Verified</option>
               <option value="Rejected">Rejected</option>
             </select>
@@ -682,7 +715,7 @@ function Records({ user }) {
                           {record.status === 'Pending' && <MdSchedule size={16} style={{ marginRight: '6px' }} />}
                           {record.status === 'Verified' && <MdVerified size={16} style={{ marginRight: '6px' }} />}
                           {record.status === 'Rejected' && <MdCancel size={16} style={{ marginRight: '6px' }} />}
-                          {record.status}
+                          {record.status === 'Pending' ? 'Verification Pending' : record.status}
                         </StatusBadge>
                       </td>
                       <td data-label="Actions">
@@ -708,14 +741,18 @@ function Records({ user }) {
                 <button onClick={() => setPagination({ ...pagination, currentPage: pagination.currentPage - 1 })} disabled={pagination.currentPage === 1}>« Previous</button>
                 <button className="active">{pagination.currentPage}</button>
                 {pagination.currentPage < pagination.totalPages - 1 && <span>...</span>}
-                {pagination.currentPage < pagination.totalPages && <button>{pagination.totalPages}</button>}
+                {pagination.currentPage < pagination.totalPages && (
+                  <button onClick={() => setPagination({ ...pagination, currentPage: pagination.totalPages })}>
+                    {pagination.totalPages}
+                  </button>
+                )}
                 <button onClick={() => setPagination({ ...pagination, currentPage: pagination.currentPage + 1 })} disabled={pagination.currentPage === pagination.totalPages}>Next »</button>
               </Pagination>
             )}
           </>
         )}
       </RecordsCard>
-      <Footer>© 2025 Burial Record Manager. All rights reserved.</Footer>
+      <Footer>© 2025 Burial Legacy Application. All rights reserved.</Footer>
 
       {/* Bulk Delete Confirmation Modal */}
       <ConfirmModal

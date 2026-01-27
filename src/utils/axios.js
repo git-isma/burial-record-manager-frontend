@@ -37,9 +37,12 @@ instance.interceptors.response.use(
         if (error.response?.status === 401) {
             console.error('❌ 401 Unauthorized Error:', error.config.url);
             console.error('Request headers:', error.config.headers);
-            // Temporarily disabled to debug - uncomment after fixing
-            // localStorage.removeItem('token');
-            // window.location.href = '/login';
+            
+            // Redirect to login on unauthorized access
+            localStorage.removeItem('token');
+            if (window.location.pathname !== '/login') {
+                window.location.href = '/login';
+            }
         }
         return Promise.reject(error);
     }

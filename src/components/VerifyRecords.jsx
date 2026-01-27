@@ -4,13 +4,129 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { PageHeader, Card, StatusBadge, Button } from '../styles/CommonStyles';
 import { theme } from '../styles/theme';
-import { MdCheckCircle, MdCancel, MdVisibility, MdDescription } from 'react-icons/md';
+import { MdCheckCircle, MdCancel, MdVisibility, MdDescription, MdSearch } from 'react-icons/md';
+import ModernDatePicker from './ModernDatePicker';
 import { ConfirmModal } from './Modal';
 import { useToast } from '../contexts/ToastContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { TableSkeleton } from './LoadingSkeleton';
 import EmptyState from './EmptyState';
 import Modal from './Modal';
+
+const FilterSection = styled(Card)`
+  margin-bottom: ${theme.spacing.xl};
+  
+  h3 { 
+    font-size: 16px; 
+    font-weight: 700; 
+    color: ${theme.colors.gray900}; 
+    margin: 0 0 ${theme.spacing.lg} 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    body.dark-theme & {
+      color: #e5e5e5;
+    }
+  }
+`;
+
+const FiltersGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: ${theme.spacing.md};
+  margin-bottom: ${theme.spacing.md};
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(5, 1fr);
+  }
+`;
+
+const FormGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  label { 
+    font-size: 13px; 
+    font-weight: 500; 
+    color: ${theme.colors.gray700}; 
+    margin-bottom: 6px;
+
+    body.dark-theme & {
+      color: #b0b0b0;
+    }
+  }
+  input, select {
+    padding: 10px 12px;
+    border: 1px solid ${theme.colors.gray300};
+    border-radius: ${theme.borderRadius.md};
+    font-size: 14px;
+    color: ${theme.colors.textPrimary};
+    background: white;
+    transition: all ${theme.transitions.fast};
+    width: 100%;
+
+    body.dark-theme & {
+      background: #2d2d2d;
+      border-color: #3d3d3d;
+      color: #e5e5e5;
+    }
+
+    &:focus { 
+      outline: none; 
+      border-color: ${theme.colors.primarySolid}; 
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+
+      body.dark-theme & {
+        border-color: #7c3aed;
+      }
+    }
+    &::placeholder { 
+      color: ${theme.colors.gray400};
+
+      body.dark-theme & {
+        color: #6d6d6d;
+      }
+    }
+  }
+`;
+
+const SearchGroup = styled(FormGroup)`
+  position: relative;
+  input { padding-left: 36px; }
+  &::before { 
+    content: ''; 
+    position: absolute; 
+    left: 12px; 
+    bottom: 12px; 
+    width: 16px; 
+    height: 16px; 
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" fill="%239ca3af" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>'); 
+    background-repeat: no-repeat;
+  }
+`;
+
+const FilterButtons = styled.div`
+  display: flex;
+  gap: ${theme.spacing.sm};
+  flex-direction: column;
+  justify-content: flex-start;
+  margin-top: ${theme.spacing.sm};
+
+  @media (min-width: 640px) {
+    flex-direction: row;
+  }
+
+  button {
+    width: 100%;
+
+    @media (min-width: 640px) {
+      width: auto;
+    }
+  }
+`;
 
 const RecordsContainer = styled.div`
   font-family: ${theme.fonts.body};
@@ -62,6 +178,7 @@ const StyledTable = styled.table`
     font-size: 12px; 
     text-transform: uppercase; 
     letter-spacing: 0.5px;
+    white-space: nowrap;
 
     body.dark-theme & {
       color: #b0b0b0;
@@ -343,8 +460,16 @@ function VerifyRecords() {
   const { formatDate } = useSettings();
   const { showToast } = useToast();
   const [records, setRecords] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, total: 0 });
+  const [filters, setFilters] = useState({
+    dateOfDeath: '',
+    burialLocation: '',
+    gender: '',
+    applicantEmail: '',
+    ageCategory: ''
+  });
 
   // Modal States
   const [verifyModal, setVerifyModal] = useState({ isOpen: false, recordId: null, recordName: '' });
@@ -353,13 +478,34 @@ function VerifyRecords() {
   const [rejectionReason, setRejectionReason] = useState('');
   const [processing, setProcessing] = useState(false);
 
-  useEffect(() => { fetchRecords(); }, [pagination.currentPage]);
+  useEffect(() => { 
+    fetchRecords(); 
+    fetchLocations();
+  }, [pagination.currentPage]);
+
+  const fetchLocations = async () => {
+    try {
+      const res = await apiService.getLocations();
+      if (Array.isArray(res.data)) {
+        setLocations(res.data);
+      } else if (res.data.success) {
+        setLocations(res.data.data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching locations:', err);
+    }
+  };
 
   const fetchRecords = async () => {
     setLoading(true);
     try {
       // Assuming GET /public-records?status=Pending is what we want
-      const params = { page: pagination.currentPage, limit: 10, status: 'Pending' };
+      const params = { 
+        page: pagination.currentPage, 
+        limit: 10, 
+        status: 'Pending',
+        ...filters
+      };
       const res = await apiService.getPublicRecords(params);
 
       if (res.data.success) {
@@ -457,6 +603,54 @@ function VerifyRecords() {
     }
   };
 
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value }));
+  };
+
+  const applyFilters = () => {
+    setPagination(prev => ({ ...prev, currentPage: 1 }));
+    fetchRecords();
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      dateOfDeath: '',
+      burialLocation: '',
+      gender: '',
+      applicantEmail: '',
+      ageCategory: ''
+    });
+    setPagination(prev => ({ ...prev, currentPage: 1 }));
+    // Use timeout to ensure state update before fetch (or define fetchRecords to use passed params)
+    // Here relying on effect dependency or manual call. 
+    // Since fetchRecords uses 'filters' state, we need to wait for state update.
+    // Better way: pass empty filters to fetchRecords, but our fetchRecords uses state.
+    // Simple workaround:
+    setTimeout(() => {
+      // Trigger fetch manually with cleared filters for this call, or rely on effect if we add filters to dep array?
+      // Current effect only watches pagination.currentPage.
+      // So detailed fetchRecords is needed or a helper.
+      // Let's just create a quick internal fetch with cleared params
+      setLoading(true);
+      apiService.getPublicRecords({ page: 1, limit: 10, status: 'Pending' })
+        .then(res => {
+          if (res.data.success) {
+            setRecords(res.data.data || []);
+            const paging = res.data.pagination || {};
+            setPagination({
+              currentPage: 1,
+              totalPages: paging.totalPages || 1,
+              total: paging.total || 0
+            });
+          } else {
+            setRecords([]);
+          }
+        })
+        .finally(() => setLoading(false));
+    }, 0);
+  };
+
   return (
     <RecordsContainer>
       <PageHeader>
@@ -464,9 +658,71 @@ function VerifyRecords() {
         <p>Review and verify burial record submissions from the public.</p>
       </PageHeader>
 
+      <FilterSection>
+        <h3>Filter Records</h3>
+        <FiltersGrid>
+          <FormGroup>
+            <label>Date of Death</label>
+            <ModernDatePicker
+              value={filters.dateOfDeath}
+              onChange={handleFilterChange}
+              name="dateOfDeath"
+              placeholder="Pick a date"
+            />
+          </FormGroup>
+          <FormGroup>
+            <label>Burial Location</label>
+            <select name="burialLocation" value={filters.burialLocation} onChange={handleFilterChange}>
+              <option value="">All Locations</option>
+              {locations.map((loc) => (
+                <option key={loc._id} value={loc.name}>
+                  {loc.name}
+                </option>
+              ))}
+            </select>
+          </FormGroup>
+          <FormGroup>
+            <label>Gender</label>
+            <select name="gender" value={filters.gender} onChange={handleFilterChange}>
+              <option value="">Select Gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </FormGroup>
+          <FormGroup>
+            <label>Applicant Email / ID</label>
+            <input 
+              type="text" 
+              name="applicantEmail" 
+              placeholder="Enter Email or ID" 
+              value={filters.applicantEmail} 
+              onChange={handleFilterChange} 
+            />
+          </FormGroup>
+          <FormGroup>
+            <label>Age Category</label>
+            <select name="ageCategory" value={filters.ageCategory} onChange={handleFilterChange}>
+              <option value="">All Categories</option>
+              <option value="Stillborn">Stillborn</option>
+              <option value="Infant">Infant</option>
+              <option value="Child">Child</option>
+              <option value="Adult">Adult</option>
+            </select>
+          </FormGroup>
+        </FiltersGrid>
+        <FilterButtons>
+          <Button $variant="primary" onClick={applyFilters}>
+             Apply Filters
+          </Button>
+          <Button $variant="secondary" onClick={resetFilters}>
+            Reset
+          </Button>
+        </FilterButtons>
+      </FilterSection>
+
       <RecordsCard>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h3 style={{ margin: 0 }}>Pending Verification Records</h3>
+          <h3 style={{ margin: 0 }}>Verification Pending Records</h3>
         </div>
 
         {loading ? (
@@ -474,7 +730,7 @@ function VerifyRecords() {
         ) : records.length === 0 ? (
           <EmptyState
             icon={<MdDescription size={48} />}
-            title="No Pending Records"
+            title="No Verification Pending Records"
             description="There are no public record submissions waiting for verification."
           />
         ) : (
@@ -527,6 +783,12 @@ function VerifyRecords() {
               <Pagination>
                 <button onClick={() => setPagination({ ...pagination, currentPage: pagination.currentPage - 1 })} disabled={pagination.currentPage === 1}>« Previous</button>
                 <button className="active">{pagination.currentPage}</button>
+                {pagination.currentPage < pagination.totalPages - 1 && <span>...</span>}
+                {pagination.currentPage < pagination.totalPages && (
+                  <button onClick={() => setPagination({ ...pagination, currentPage: pagination.totalPages })}>
+                    {pagination.totalPages}
+                  </button>
+                )}
                 <button onClick={() => setPagination({ ...pagination, currentPage: pagination.currentPage + 1 })} disabled={pagination.currentPage === pagination.totalPages}>Next »</button>
               </Pagination>
             )}

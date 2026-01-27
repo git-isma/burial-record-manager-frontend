@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// Vite configuration for Burial Record Manager
+// Vite configuration for Burial Application
 export default defineConfig({
   plugins: [react()],
   server: {

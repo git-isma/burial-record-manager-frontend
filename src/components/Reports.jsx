@@ -2,23 +2,23 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../utils/api';
 import styled from 'styled-components';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
-  PieChart, Pie, Cell, AreaChart, Area, Sector, RadialBarChart, RadialBar 
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell, AreaChart, Area, Sector, RadialBarChart, RadialBar
 } from 'recharts';
 import { Card, Button, PageHeader, FormGroup, Alert } from '../styles/CommonStyles';
 import { theme } from '../styles/theme';
 import ModernDatePicker from './ModernDatePicker';
-import { 
-  MdVisibility, 
-  MdDownload, 
-  MdPictureAsPdf, 
-  MdTableChart, 
-  MdBarChart, 
-  MdTrendingUp, 
-  MdTrendingDown, 
-  MdPeople, 
-  MdCheckCircle 
+import {
+  MdVisibility,
+  MdDownload,
+  MdPictureAsPdf,
+  MdTableChart,
+  MdBarChart,
+  MdTrendingUp,
+  MdTrendingDown,
+  MdPeople,
+  MdCheckCircle
 } from 'react-icons/md';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -693,7 +693,7 @@ function Reports() {
 
       // Add Title Header (Logo Left, Text Right)
       pdf.addImage(ismaLogo, 'PNG', 15, 8, 25, 25);
-      
+
       pdf.setTextColor(15, 23, 42); // #0f172a
       pdf.setFontSize(22);
       pdf.setFont('helvetica', 'bold');
@@ -765,39 +765,39 @@ function Reports() {
       }
 
       if (filters.reportType === 'Detailed') {
-      pdf.addPage();
-      pdf.setFontSize(14);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Filtered Records', 10, 15);
+        pdf.addPage();
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Filtered Records', 10, 15);
 
-      const tableData = allRecords.map(record => [
-        record.recordNumber || '',
-        `${record.firstName || ''} ${record.middleName || ''} ${record.lastName || ''}`.replace(/\s+/g, ' ').trim(),
-        record.dateOfDeath ? formatDate(record.dateOfDeath) : '',
-        record.burialLocation || '',
-        record.gender || '',
-        record.status || ''
-      ]);
+        const tableData = allRecords.map(record => [
+          record.recordNumber || '',
+          `${record.firstName || ''} ${record.middleName || ''} ${record.lastName || ''}`.replace(/\s+/g, ' ').trim(),
+          record.dateOfDeath ? formatDate(record.dateOfDeath) : '',
+          record.burialLocation || '',
+          record.gender || '',
+          record.status || ''
+        ]);
 
-      autoTable(pdf, {
-        startY: 20,
-        head: [['Record No.', 'Name', 'Date of Death', 'Burial Location', 'Gender', 'Status']],
-        body: tableData,
-        styles: {
-          fontSize: 8,
-          cellPadding: 2
-        },
-        headStyles: {
-          fillColor: [124, 58, 237],
-          fontStyle: 'bold',
-          halign: 'left'
-        },
-        alternateRowStyles: {
-          fillColor: [245, 245, 245]
-        },
-        margin: { left: 10, right: 10 }
-      });
-    }
+        autoTable(pdf, {
+          startY: 20,
+          head: [['Record No.', 'Name', 'Date of Death', 'Burial Location', 'Gender', 'Status']],
+          body: tableData,
+          styles: {
+            fontSize: 8,
+            cellPadding: 2
+          },
+          headStyles: {
+            fillColor: [124, 58, 237],
+            fontStyle: 'bold',
+            halign: 'left'
+          },
+          alternateRowStyles: {
+            fillColor: [245, 245, 245]
+          },
+          margin: { left: 10, right: 10 }
+        });
+      }
 
       pdf.save(`${filters.reportType.toLowerCase()}-burial-report-${new Date().toISOString().split('T')[0]}.pdf`);
       showToast(`PDF exported successfully with ${allRecords.length} records`, 'success');
@@ -836,74 +836,74 @@ function Reports() {
 
       // Only include specific record sheets for Detailed reports
       if (filters.reportType === 'Detailed') {
-      // Records sheet - using array of arrays for better control
-      const recordsHeaders = ['Record Number', 'Full Name', 'Date of Death', 'Burial Location', 'Gender', 'Age', 'Status'];
-      const recordsRows = allRecords.map(record => [
-        record.recordNumber || '',
-        `${record.firstName || ''} ${record.middleName || ''} ${record.lastName || ''}`.replace(/\s+/g, ' ').trim(),
-        record.dateOfDeath ? formatDate(record.dateOfDeath) : '',
-        record.burialLocation || '',
-        record.gender || '',
-        record.age || '',
-        record.status || '',
-        record.issuanceDate ? formatDate(record.issuanceDate) : ''
-      ]);
-
-      const recordsData = [recordsHeaders, ...recordsRows];
-      const recordsSheet = XLSX.utils.aoa_to_sheet(recordsData);
-
-      // Set column widths
-      recordsSheet['!cols'] = [
-        { wch: 15 }, // Record Number
-        { wch: 25 }, // Full Name
-        { wch: 15 }, // Date of Death
-        { wch: 20 }, // Burial Location
-        { wch: 10 }, // Gender
-        { wch: 8 },  // Age
-        { wch: 12 }, // Status
-        { wch: 15 }  // Issuance Date
-      ];
-
-      XLSX.utils.book_append_sheet(wb, recordsSheet, 'All Records');
-
-      // Filtered Records sheet (currently visible records)
-      if (filteredRecords.length > 0) {
-        const filteredHeaders = ['Record No.', 'Name', 'Date of Death', 'Burial Location', 'Gender', 'Status'];
-        const filteredRows = filteredRecords.map(record => [
+        // Records sheet - using array of arrays for better control
+        const recordsHeaders = ['Record Number', 'Full Name', 'Date of Death', 'Burial Location', 'Gender', 'Age', 'Status'];
+        const recordsRows = allRecords.map(record => [
           record.recordNumber || '',
           `${record.firstName || ''} ${record.middleName || ''} ${record.lastName || ''}`.replace(/\s+/g, ' ').trim(),
           record.dateOfDeath ? formatDate(record.dateOfDeath) : '',
           record.burialLocation || '',
           record.gender || '',
-          record.status || ''
+          record.age || '',
+          record.status || '',
+          record.issuanceDate ? formatDate(record.issuanceDate) : ''
         ]);
 
-        const filteredData = [
-          ['Filtered Records'],
-          ['Current Page:', currentPage],
-          ['Filters Applied:'],
-          ['Date Range:', filters.dateRange],
-          ['Gender:', filters.gender || 'All'],
-          ['Burial Location:', filters.burialLocation || 'All'],
-          [],
-          filteredHeaders,
-          ...filteredRows
-        ];
+        const recordsData = [recordsHeaders, ...recordsRows];
+        const recordsSheet = XLSX.utils.aoa_to_sheet(recordsData);
 
-        const filteredSheet = XLSX.utils.aoa_to_sheet(filteredData);
-
-        // Set column widths for filtered sheet
-        filteredSheet['!cols'] = [
-          { wch: 15 }, // Record No.
-          { wch: 25 }, // Name
+        // Set column widths
+        recordsSheet['!cols'] = [
+          { wch: 15 }, // Record Number
+          { wch: 25 }, // Full Name
           { wch: 15 }, // Date of Death
           { wch: 20 }, // Burial Location
           { wch: 10 }, // Gender
-          { wch: 12 }  // Status
+          { wch: 8 },  // Age
+          { wch: 12 }, // Status
+          { wch: 15 }  // Issuance Date
         ];
 
-        XLSX.utils.book_append_sheet(wb, filteredSheet, 'Filtered View');
-      }
+        XLSX.utils.book_append_sheet(wb, recordsSheet, 'All Records');
+
+        // Filtered Records sheet (currently visible records)
+        if (filteredRecords.length > 0) {
+          const filteredHeaders = ['Record No.', 'Name', 'Date of Death', 'Burial Location', 'Gender', 'Status'];
+          const filteredRows = filteredRecords.map(record => [
+            record.recordNumber || '',
+            `${record.firstName || ''} ${record.middleName || ''} ${record.lastName || ''}`.replace(/\s+/g, ' ').trim(),
+            record.dateOfDeath ? formatDate(record.dateOfDeath) : '',
+            record.burialLocation || '',
+            record.gender || '',
+            record.status || ''
+          ]);
+
+          const filteredData = [
+            ['Filtered Records'],
+            ['Current Page:', currentPage],
+            ['Filters Applied:'],
+            ['Date Range:', filters.dateRange],
+            ['Gender:', filters.gender || 'All'],
+            ['Burial Location:', filters.burialLocation || 'All'],
+            [],
+            filteredHeaders,
+            ...filteredRows
+          ];
+
+          const filteredSheet = XLSX.utils.aoa_to_sheet(filteredData);
+
+          // Set column widths for filtered sheet
+          filteredSheet['!cols'] = [
+            { wch: 15 }, // Record No.
+            { wch: 25 }, // Name
+            { wch: 15 }, // Date of Death
+            { wch: 20 }, // Burial Location
+            { wch: 10 }, // Gender
+            { wch: 12 }  // Status
+          ];
+
+          XLSX.utils.book_append_sheet(wb, filteredSheet, 'Filtered View');
+        }
       }
 
       // Save file
@@ -931,7 +931,7 @@ function Reports() {
           ['Males', stats.genderStats?.find(g => g._id === 'Male')?.count || 0],
           ['Females', stats.genderStats?.find(g => g._id === 'Female')?.count || 0]
         ];
-        
+
         csvContent = headers.join(',') + '\n';
         rows.forEach(row => {
           csvContent += row.map(cell => `"${cell}"`).join(',') + '\n';
@@ -1017,7 +1017,7 @@ Status: ${record.status}
   return (
     <ReportsContainer>
       <PrintHeader>
-        <img src={ismaLogo} alt="ISMA Logo" className="print-logo" />
+        <img src={ismaLogo} alt="Islamia School & Mosque Association Logo" className="print-logo" />
         <div className="header-text">
           <h1>Islamia School &<br />Mosque Association</h1>
           <div className="report-info">
@@ -1107,7 +1107,7 @@ Status: ${record.status}
           <div className="stat-label">Total Records</div>
           <div className="stat-value">{stats.totalRecords || 0}</div>
         </StatCard>
-        
+
         <StatCard>
           <div className="stat-icon"><MdPeople size={24} style={{ opacity: 0.5 }} /></div>
           <div className="stat-label">Males</div>
@@ -1136,31 +1136,31 @@ Status: ${record.status}
               <AreaChart data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorRecords" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={theme.colors.primary} stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor={theme.colors.primary} stopOpacity={0}/>
+                    <stop offset="5%" stopColor={theme.colors.primary} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={theme.colors.primary} stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? '#333' : '#f0f0f0'} />
-                <XAxis 
-                  dataKey="month" 
+                <XAxis
+                  dataKey="month"
                   axisLine={false}
                   tickLine={false}
                   tick={{ fill: isDarkMode ? '#888' : '#666', fontSize: 12 }}
                   dy={10}
                 />
-                <YAxis 
+                <YAxis
                   axisLine={false}
                   tickLine={false}
                   tick={{ fill: isDarkMode ? '#888' : '#666', fontSize: 12 }}
                 />
                 <Tooltip content={<CustomTooltip isDarkMode={isDarkMode} />} />
-                <Area 
-                  type="monotone" 
-                  dataKey="Records" 
-                  stroke={theme.colors.primary} 
+                <Area
+                  type="monotone"
+                  dataKey="Records"
+                  stroke={theme.colors.primary}
                   strokeWidth={3}
-                  fillOpacity={1} 
-                  fill="url(#colorRecords)" 
+                  fillOpacity={1}
+                  fill="url(#colorRecords)"
                   animationBegin={200}
                   animationDuration={1500}
                 />
@@ -1182,20 +1182,20 @@ Status: ${record.status}
                   barSize={32}
                 >
                   <XAxis type="number" hide />
-                  <YAxis 
-                    type="category" 
-                    dataKey="name" 
+                  <YAxis
+                    type="category"
+                    dataKey="name"
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: isDarkMode ? '#b0b0b0' : '#4b5563', fontWeight: 600, fontSize: 13 }}
                     width={80}
                   />
-                  <Tooltip 
+                  <Tooltip
                     cursor={{ fill: 'transparent' }}
                     content={<CustomTooltip isDarkMode={isDarkMode} />}
                   />
-                  <Bar 
-                    dataKey="value" 
+                  <Bar
+                    dataKey="value"
                     radius={[0, 20, 20, 0]}
                     animationBegin={300}
                     animationDuration={1500}
@@ -1206,19 +1206,19 @@ Status: ${record.status}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-              
+
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginTop: '24px' }}>
-                 {genderData.map((entry, index) => (
-                   <div key={index} style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: '12px', color: isDarkMode ? '#888' : '#666', marginBottom: '4px' }}>{entry.name}</div>
-                      <div style={{ fontSize: '18px', fontWeight: 800, color: COLORS[index % COLORS.length] }}>
-                        {entry.value}
-                      </div>
-                      <div style={{ fontSize: '10px', color: '#999', fontWeight: 500 }}>
-                        {stats?.totalRecords > 0 ? Math.round((entry.value / stats.totalRecords) * 100) : 0}%
-                      </div>
-                   </div>
-                 ))}
+                {genderData.map((entry, index) => (
+                  <div key={index} style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '12px', color: isDarkMode ? '#888' : '#666', marginBottom: '4px' }}>{entry.name}</div>
+                    <div style={{ fontSize: '18px', fontWeight: 800, color: COLORS[index % COLORS.length] }}>
+                      {entry.value}
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#999', fontWeight: 500 }}>
+                      {stats?.totalRecords > 0 ? Math.round((entry.value / stats.totalRecords) * 100) : 0}%
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ) : <div style={{ height: '320px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>No data available</div>}
@@ -1226,82 +1226,82 @@ Status: ${record.status}
       </ChartsGrid>
 
       {filters.reportType === 'Detailed' ? (
-      <Card>
-        <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 4px 0', color: isDarkMode ? '#e5e5e5' : theme.colors.gray900 }}>Filtered Records</h3>
-        <p style={{ fontSize: '13px', color: isDarkMode ? '#a0a0a0' : theme.colors.gray500, margin: '0 0 20px 0' }}>Overview of burial records matching current report filters</p>
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: isDarkMode ? '#a0a0a0' : theme.colors.gray500 }}>
-            Loading records...
-          </div>
-        ) : (
-          <>
-            <StyledTable>
-              <thead>
-                <tr>
-                  <th>Record No.</th>
-                  <th>Name</th>
-                  <th>Date of Death</th>
-                  <th>Burial Location</th>
-                  <th>Gender</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRecords.length > 0 ? filteredRecords.map((record) => (
-                  <tr key={record._id}>
-                    <td style={{ fontWeight: 600 }}>{record.recordNumber}</td>
-                    <td>{`${record.firstName || ''} ${record.middleName || ''} ${record.lastName || ''}`.replace(/\s+/g, ' ').trim()}</td>
-                    <td>{formatDate(record.dateOfDeath)}</td>
-                    <td>{record.burialLocation}</td>
-                    <td>{record.gender}</td>
-                    <td><StatusBadge $status={record.status}>{record.status}</StatusBadge></td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <ActionLink title="View Details" onClick={() => handleViewDetails(record._id)}>
-                          <MdVisibility size={18} />
-                        </ActionLink>
-                        <ActionLink title="Download Record" onClick={() => handleDownloadRecord(record)}>
-                          <MdDownload size={18} />
-                        </ActionLink>
-                      </div>
-                    </td>
-                  </tr>
-                )) : (
+        <Card>
+          <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 4px 0', color: isDarkMode ? '#e5e5e5' : theme.colors.gray900 }}>Filtered Records</h3>
+          <p style={{ fontSize: '13px', color: isDarkMode ? '#a0a0a0' : theme.colors.gray500, margin: '0 0 20px 0' }}>Overview of burial records matching current report filters</p>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: isDarkMode ? '#a0a0a0' : theme.colors.gray500 }}>
+              Loading records...
+            </div>
+          ) : (
+            <>
+              <StyledTable>
+                <thead>
                   <tr>
-                    <td colSpan="7" style={{ textAlign: 'center', padding: '40px', color: isDarkMode ? '#a0a0a0' : theme.colors.gray500 }}>
-                      No records found matching the current filters
-                    </td>
+                    <th>Record No.</th>
+                    <th>Name</th>
+                    <th>Date of Death</th>
+                    <th>Burial Location</th>
+                    <th>Gender</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                   </tr>
-                )}
-              </tbody>
-            </StyledTable>
-            {filteredRecords.length > 0 && totalPages > 1 && (
-              <Pagination>
-                <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>
-                  « Previous
-                </button>
-                {[...Array(Math.min(totalPages, 3))].map((_, i) => {
-                  const pageNum = currentPage <= 2 ? i + 1 : currentPage + i - 1;
-                  if (pageNum > totalPages) return null;
-                  return (
-                    <button
-                      key={pageNum}
-                      className={currentPage === pageNum ? 'active' : ''}
-                      onClick={() => setCurrentPage(pageNum)}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-                <button onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage === totalPages}>
-                  Next »
-                </button>
-              </Pagination>
-            )}
-          </>
-        )}
-      </Card>
+                </thead>
+                <tbody>
+                  {filteredRecords.length > 0 ? filteredRecords.map((record) => (
+                    <tr key={record._id}>
+                      <td style={{ fontWeight: 600 }}>{record.recordNumber}</td>
+                      <td>{`${record.firstName || ''} ${record.middleName || ''} ${record.lastName || ''}`.replace(/\s+/g, ' ').trim()}</td>
+                      <td>{formatDate(record.dateOfDeath)}</td>
+                      <td>{record.burialLocation}</td>
+                      <td>{record.gender}</td>
+                      <td><StatusBadge $status={record.status}>{record.status}</StatusBadge></td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <ActionLink title="View Details" onClick={() => handleViewDetails(record._id)}>
+                            <MdVisibility size={18} />
+                          </ActionLink>
+                          <ActionLink title="Download Record" onClick={() => handleDownloadRecord(record)}>
+                            <MdDownload size={18} />
+                          </ActionLink>
+                        </div>
+                      </td>
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan="7" style={{ textAlign: 'center', padding: '40px', color: isDarkMode ? '#a0a0a0' : theme.colors.gray500 }}>
+                        No records found matching the current filters
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </StyledTable>
+              {filteredRecords.length > 0 && totalPages > 1 && (
+                <Pagination>
+                  <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>
+                    « Previous
+                  </button>
+                  {[...Array(Math.min(totalPages, 3))].map((_, i) => {
+                    const pageNum = currentPage <= 2 ? i + 1 : currentPage + i - 1;
+                    if (pageNum > totalPages) return null;
+                    return (
+                      <button
+                        key={pageNum}
+                        className={currentPage === pageNum ? 'active' : ''}
+                        onClick={() => setCurrentPage(pageNum)}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  <button onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage === totalPages}>
+                    Next »
+                  </button>
+                </Pagination>
+              )}
+            </>
+          )}
+        </Card>
       ) : (
         <Card>
           <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 16px 0', color: isDarkMode ? '#e5e5e5' : theme.colors.gray900 }}>Summary Overview</h3>
@@ -1313,7 +1313,7 @@ Status: ${record.status}
       )}
 
       <div style={{ textAlign: 'center', padding: '24px', color: isDarkMode ? '#6d6d6d' : theme.colors.gray500, fontSize: '12px' }}>
-        © 2025 Burial Record Manager by Islamia School & Mosque Association. All rights reserved.
+        © 2025 Burial Legacy Application by Islamia School & Mosque Association. All rights reserved.
       </div>
 
 
