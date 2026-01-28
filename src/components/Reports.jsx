@@ -697,10 +697,9 @@ function Reports() {
       pdf.setTextColor(15, 23, 42); // #0f172a
       pdf.setFontSize(22);
       pdf.setFont('helvetica', 'bold');
-      pdf.text('Islamia School &', 45, 18);
-      pdf.text('Mosque Association', 45, 28);
+      pdf.text('Islamia School & Mosque Association', 45, 23);
 
-      yPosition = 40;
+      yPosition = 35;
 
       // Add Report Details (Centered below the header)
       pdf.setTextColor(100, 116, 139); // #64748b
@@ -1019,7 +1018,7 @@ Status: ${record.status}
       <PrintHeader>
         <img src={ismaLogo} alt="Islamia School & Mosque Association Logo" className="print-logo" />
         <div className="header-text">
-          <h1>Islamia School &<br />Mosque Association</h1>
+          <h1>Islamia School & Mosque Association</h1>
           <div className="report-info">
             <span style={{ fontWeight: 600 }}>{filters.reportType} Burial Record Report</span>
             <span>Generated on: {formatDate(new Date())}</span>
