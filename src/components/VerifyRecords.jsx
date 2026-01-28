@@ -504,6 +504,7 @@ function VerifyRecords() {
         page: pagination.currentPage, 
         limit: 10, 
         status: 'Pending',
+        endDate: new Date().toISOString().split('T')[0],
         ...filters
       };
       const res = await apiService.getPublicRecords(params);
@@ -633,7 +634,12 @@ function VerifyRecords() {
       // So detailed fetchRecords is needed or a helper.
       // Let's just create a quick internal fetch with cleared params
       setLoading(true);
-      apiService.getPublicRecords({ page: 1, limit: 10, status: 'Pending' })
+      apiService.getPublicRecords({ 
+        page: 1, 
+        limit: 10, 
+        status: 'Pending',
+        endDate: new Date().toISOString().split('T')[0]
+      })
         .then(res => {
           if (res.data.success) {
             setRecords(res.data.data || []);
