@@ -703,8 +703,16 @@ function DataCapture() {
 
     const allFieldsFilled = baseRequired.every(field => field && String(field).trim() !== "");
 
-    // Check if attachments are required (not required for exempt OR if editing existing OR if files are newly selected)
-    const attachmentsValid = isExempt || editId || files.length > 0 || (existingAttachments && existingAttachments.length > 0);
+    // Check if attachments are required
+    // Now required for ALL categories (Stillborn, Infant, Adult, Child)
+    // Check if exempt from other fields? reusing isExempt for that purpose (firstName/lastName) is fine.
+    
+    // Attachments valid logic:
+    // Must have at least one attachment if new record (not editId), or if editId but we want to ensure they exist (though usually we trust existing records).
+    // Let's assume validation is: if (!editId && total < 1) -> invalid.
+    
+    const hasAttachments = files.length > 0 || (existingAttachments && existingAttachments.length > 0);
+    const attachmentsValid = editId || hasAttachments;
 
     return allFieldsFilled && attachmentsValid && termsAccepted;
   };
@@ -1058,7 +1066,7 @@ function DataCapture() {
           }
           break;
         case "Adult":
-          // Adult: Above 12 years (13+)
+          // Adult: Above 12 years (12+)
           if (age <= 12) {
             error("Adult age must be above 12 years");
             return;
@@ -1075,19 +1083,22 @@ function DataCapture() {
       return;
     }
 
-    // Validate attachments are required for non-Stillborn/Infant cases
-    const isExempt =
-      formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant";
-    if (
-      !isExempt &&
-      !editId &&
-      files.length === 0 &&
-      existingAttachments.length === 0
-    ) {
-      error(
-        "Attachments are required for this age category. Please upload at least one document."
-      );
-      return;
+    // Validate attachments are required
+    const totalAttachments = files.length + existingAttachments.length;
+
+    if (!editId) {
+        if (formData.ageCategory === "Stillborn" && totalAttachments < 1) {
+            error("Medical Certificate of Stillbirth is required for Stillborn category. Please upload it.");
+            return;
+        }
+        if (formData.ageCategory === "Infant" && totalAttachments < 1) {
+            error("Birth Certificate is required for Infant category. Please upload it.");
+            return;
+        }
+        if (["Adult", "Child"].includes(formData.ageCategory) && totalAttachments < 1) {
+             error("Attachments are required for this age category. Please upload at least one document.");
+             return;
+        }
     }
 
     if (!termsAccepted) {
@@ -1456,7 +1467,7 @@ function DataCapture() {
                       : formData.ageCategory === "Child"
                         ? "Enter age (1-12 years)"
                         : formData.ageCategory === "Adult"
-                          ? "Enter age (13+ years)"
+                          ? "Enter age (12+ years)"
                           : "Enter age"
                 }
                 min="0"
@@ -2007,18 +2018,19 @@ function DataCapture() {
 
           {formData.ageCategory === "Stillborn" ||
             formData.ageCategory === "Infant" ? (
-            <ExemptionNote>
+            <AttachmentNote>
               <div className="icon">
-                <MdCheckCircleOutline size={20} />
+                <MdWarning size={20} />
               </div>
               <div className="content">
-                <h4>Exemption Notice</h4>
+                <h4>Required Documents *</h4>
                 <p>
-                  For Stillborn and Infant cases, no attachments are required.
-                  You can proceed without uploading any documents.
+                  {formData.ageCategory === "Stillborn"
+                    ? "Please upload the Medical Certificate of Stillbirth."
+                    : "Please upload the Birth Certificate."}
                 </p>
               </div>
-            </ExemptionNote>
+            </AttachmentNote>
           ) : (
             <AttachmentNote>
               <div className="icon">

@@ -138,7 +138,7 @@ export const apiService = {
 
     // Public Records
     getPublicRecords: (params) => axios.get(API_ENDPOINTS.PUBLIC_RECORDS.LIST, { params }),
-    getPublicRecord: (params) => axios.get(API_ENDPOINTS.PUBLIC_RECORDS.LIST, { params: { id } }),
+    getPublicRecord: (id) => axios.get(API_ENDPOINTS.PUBLIC_RECORDS.LIST, { params: { id } }),
     verifyPublicRecord: (id, data) => axios.put(API_ENDPOINTS.RECORDS.VERIFY(id), data),
     getLatestApplicantId: () => axios.get(API_ENDPOINTS.PUBLIC_RECORDS.LATEST_APPLICANT_ID),
 
