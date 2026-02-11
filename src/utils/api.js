@@ -46,7 +46,7 @@ export const API_ENDPOINTS = {
         DELETE: (id) => `/records/${id}`,
         BULK_DELETE: '/records',
         VERIFY: (id) => `/records/verify-public/${id}`,
-        LATEST_NUMBER: '/records/latest-number',
+        LATEST_NUMBER: '/records/latest-record-number',
         LATEST_RECEIPT_NUMBER: '/records/latest-receipt-number',
     },
 
@@ -85,7 +85,7 @@ export const API_ENDPOINTS = {
 
     // Receipt Number Endpoints
     RECEIPT: {
-        LATEST: '/records/latest-receipt-no',
+        LATEST: '/records/latest-receipt-number',
     },
 };
 

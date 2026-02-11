@@ -857,7 +857,7 @@ Status: ${record.status}
       </RecentUploadsSection>
 
       <div style={{ textAlign: 'center', padding: '24px', color: isDarkMode ? '#6d6d6d' : theme.colors.gray500, fontSize: '12px' }}>
-        © 2025 Burial Legacy Application. All rights reserved.
+        © 2026 Burial Legacy Application. All rights reserved.
       </div>
     </DashboardContainer>
   );

@@ -477,6 +477,7 @@ function VerifyRecords() {
   const [viewModal, setViewModal] = useState({ isOpen: false, record: null });
   const [rejectionReason, setRejectionReason] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [nextNumbers, setNextNumbers] = useState({ recordNumber: '', receiptNo: '' });
 
   useEffect(() => { 
     fetchRecords(); 
@@ -529,12 +530,31 @@ function VerifyRecords() {
     }
   };
 
-  const handleVerifyClick = (record) => {
-    setVerifyModal({
-      isOpen: true,
-      recordId: record._id,
-      recordName: `${record.firstName} ${record.lastName}`
-    });
+  const handleVerifyClick = async (record) => {
+    setProcessing(true);
+    try {
+      const [recordRes, receiptRes] = await Promise.all([
+        apiService.getLatestRecordNumber(),
+        apiService.getLatestReceiptNumber()
+      ]);
+
+      const nextRecNum = recordRes.data.recordNumber;
+      const nextReceiptNum = receiptRes.data.receiptNo;
+
+      setNextNumbers({ recordNumber: nextRecNum, receiptNo: nextReceiptNum });
+      setVerifyModal({
+        isOpen: true,
+        recordId: record._id,
+        recordName: `${record.firstName} ${record.lastName}`,
+        recordNumber: nextRecNum,
+        receiptNo: nextReceiptNum
+      });
+    } catch (err) {
+      console.error('Error fetching next numbers:', err);
+      showToast('Error preparing verification. Please try again.', 'error');
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const handleRejectClick = (record) => {
@@ -572,9 +592,13 @@ function VerifyRecords() {
   const confirmVerify = async () => {
     setProcessing(true);
     try {
-      const res = await apiService.verifyPublicRecord(verifyModal.recordId, { status: 'Verified' });
+      const res = await apiService.verifyPublicRecord(verifyModal.recordId, { 
+        status: 'Verified',
+        recordNumber: verifyModal.recordNumber,
+        receiptNo: verifyModal.receiptNo
+      });
       showToast(res.data.message || 'Record verified successfully', 'success');
-      setVerifyModal({ isOpen: false, recordId: null, recordName: '' });
+      setVerifyModal({ isOpen: false, recordId: null, recordName: '', recordNumber: '', receiptNo: '' });
       fetchRecords(); // Refresh list
     } catch (err) {
       showToast(err.response?.data?.msg || 'Error verifying record', 'error');
@@ -751,7 +775,7 @@ function VerifyRecords() {
                     <th>Date of Death</th>
                     <th>Burial Location</th>
                     <th>Submitted By</th>
-                    {/* <th>Status</th> */}
+                    <th>Receipt No</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -764,11 +788,7 @@ function VerifyRecords() {
                       <td>{formatDate(record.dateOfDeath)}</td>
                       <td>{record.burialLocation}</td>
                       <td>{record.applicantEmail || 'N/A'}</td>
-                      {/* <td>
-                        <StatusBadge $status="Pending">
-                          Pending Verify
-                        </StatusBadge>
-                      </td> */}
+                      <td>{record.tempReceiptNo || record.receiptNo}</td>
                       <td>
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <ActionButton
@@ -805,10 +825,19 @@ function VerifyRecords() {
       {/* Verify Confirmation Modal */}
       <ConfirmModal
         isOpen={verifyModal.isOpen}
-        onClose={() => setVerifyModal({ isOpen: false, recordId: null, recordName: '' })}
+        onClose={() => setVerifyModal({ isOpen: false, recordId: null, recordName: '', recordNumber: '', receiptNo: '' })}
         onConfirm={confirmVerify}
         title="Verify Record"
-        message={`Are you sure you want to verify the record for "${verifyModal.recordName}"? This will move it to the main burial records.`}
+        message={
+          <div>
+            <p style={{ marginBottom: '12px' }}>Are you sure you want to verify the record for <strong>{verifyModal.recordName}</strong>?</p>
+            <div style={{ backgroundColor: theme.colors.gray50, padding: '12px', borderRadius: '8px', border: `1px solid ${theme.colors.gray200}` }}>
+              <p style={{ fontSize: '13px', margin: '0 0 4px 0', color: theme.colors.gray600 }}>Assignment Details:</p>
+              <p style={{ margin: '0', fontWeight: '600', color: theme.colors.textPrimary }}>Record No: {verifyModal.recordNumber || 'Loading...'}</p>
+              <p style={{ margin: '0', fontWeight: '600', color: theme.colors.textPrimary }}>Receipt No: {verifyModal.receiptNo || 'Loading...'}</p>
+            </div>
+          </div>
+        }
         confirmText={processing ? "Verifying..." : "Verify Record"}
         cancelText="Cancel"
         variant="success"
@@ -1060,10 +1089,10 @@ function VerifyRecords() {
                   <ViewValue>{viewModal.record.primaryService}</ViewValue>
                 </ViewItem>
               )}
-              {viewModal.record.amountPaidBurial && (
+              {viewModal.record.amountPayableBurial && (
                 <ViewItem>
                   <ViewLabel>Amount Payable for Burial</ViewLabel>
-                  <ViewValue>KES {viewModal.record.amountPaidBurial.toLocaleString()}</ViewValue>
+                  <ViewValue>KES {viewModal.record.amountPayableBurial.toLocaleString()}</ViewValue>
                 </ViewItem>
               )}
               {viewModal.record.secondaryService && viewModal.record.secondaryService !== 'None' && (
@@ -1072,10 +1101,10 @@ function VerifyRecords() {
                   <ViewValue>{viewModal.record.secondaryService}</ViewValue>
                 </ViewItem>
               )}
-              {viewModal.record.amountPaidSecondary && (
+              {viewModal.record.amountPayableSecondary && (
                 <ViewItem>
                   <ViewLabel>Secondary Amount</ViewLabel>
-                  <ViewValue>KES {viewModal.record.amountPaidSecondary.toLocaleString()}</ViewValue>
+                  <ViewValue>KES {viewModal.record.amountPayableSecondary.toLocaleString()}</ViewValue>
                 </ViewItem>
               )}
               {viewModal.record.tertiaryService && viewModal.record.tertiaryService !== 'None' && (
@@ -1084,10 +1113,10 @@ function VerifyRecords() {
                   <ViewValue>{viewModal.record.tertiaryService}</ViewValue>
                 </ViewItem>
               )}
-              {viewModal.record.amountPaidTertiary && (
+              {viewModal.record.amountPayableTertiary && (
                 <ViewItem>
                   <ViewLabel>Other Services Amount</ViewLabel>
-                  <ViewValue>KES {viewModal.record.amountPaidTertiary.toLocaleString()}</ViewValue>
+                  <ViewValue>KES {viewModal.record.amountPayableTertiary.toLocaleString()}</ViewValue>
                 </ViewItem>
               )}
             </ViewGrid>
@@ -1104,6 +1133,12 @@ function VerifyRecords() {
                 <ViewItem>
                   <ViewLabel>Receipt No</ViewLabel>
                   <ViewValue>{viewModal.record.receiptNo}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.tempReceiptNo && (
+                <ViewItem>
+                  <ViewLabel>Temp Receipt No</ViewLabel>
+                  <ViewValue>{viewModal.record.tempReceiptNo}</ViewValue>
                 </ViewItem>
               )}
             </ViewGrid>

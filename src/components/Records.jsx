@@ -479,8 +479,8 @@ function Records({ user }) {
   const [selectedRecords, setSelectedRecords] = useState([]);
   const [bulkDeleteModal, setBulkDeleteModal] = useState({ isOpen: false });
 
-  useEffect(() => { 
-    fetchRecords(); 
+  useEffect(() => {
+    fetchRecords();
     fetchLocations();
   }, []);
 
@@ -651,7 +651,7 @@ function Records({ user }) {
       <RecordsCard>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h3 style={{ margin: 0 }}>All Burial Records</h3>
-          {selectedRecords.length > 0 && (
+          {/* {selectedRecords.length > 0 && (
             <Button
               $variant="danger"
               onClick={handleBulkDeleteClick}
@@ -659,7 +659,7 @@ function Records({ user }) {
             >
               <MdDelete size={18} /> Delete Selected ({selectedRecords.length})
             </Button>
-          )}
+          )} */}
         </div>
         {loading ? (
           <TableSkeleton rows={10} />
@@ -679,18 +679,19 @@ function Records({ user }) {
               <StyledTable>
                 <thead>
                   <tr>
-                    <th style={{ width: '40px' }}>
+                    {/* <th style={{ width: '40px' }}>
                       <input
                         type="checkbox"
                         onChange={handleSelectAll}
                         checked={selectedRecords.length === records.length && records.length > 0}
                         style={{ cursor: 'pointer', width: '16px', height: '16px' }}
                       />
-                    </th>
+                    </th> */}
                     <th>Record No</th>
                     <th>Name</th>
                     <th>Date of Death</th>
                     <th>Burial Location</th>
+                    <th>Receipt No</th>
                     <th>Status</th>
                     <th>Actions</th>
                   </tr>
@@ -698,18 +699,28 @@ function Records({ user }) {
                 <tbody>
                   {records.map(record => (
                     <tr key={record._id}>
-                      <td>
+                      {/* <td>
                         <input
                           type="checkbox"
                           checked={selectedRecords.includes(record._id)}
                           onChange={() => handleSelectRecord(record._id)}
                           style={{ cursor: 'pointer', width: '16px', height: '16px' }}
                         />
-                      </td>
+                      </td> */}
                       <td data-label="Record No" style={{ fontWeight: 600 }}>{record.recordNumber}</td>
                       <td data-label="Name">{`${record.firstName} ${record.middleName || ''} ${record.lastName}`.replace(/\s+/g, ' ').trim()}</td>
                       <td data-label="Date of Death">{formatDate(record.dateOfDeath)}</td>
                       <td data-label="Location">{record.burialLocation}</td>
+                      <td data-label="Receipt No">
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontWeight: 600 }}>{record.receiptNo}</span>
+                          {record.tempReceiptNo && (
+                            <span style={{ fontSize: '11px', color: theme.colors.gray500 }}>
+                              Temp: {record.tempReceiptNo}
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td data-label="Status">
                         <StatusBadge $status={record.status}>
                           {record.status === 'Pending' && <MdSchedule size={16} style={{ marginRight: '6px' }} />}
@@ -752,7 +763,7 @@ function Records({ user }) {
           </>
         )}
       </RecordsCard>
-      <Footer>© 2025 Burial Legacy Application. All rights reserved.</Footer>
+      <Footer>© 2026 Burial Legacy Application. All rights reserved.</Footer>
 
       {/* Bulk Delete Confirmation Modal */}
       <ConfirmModal
