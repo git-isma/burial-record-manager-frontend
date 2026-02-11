@@ -72,7 +72,7 @@ export const API_ENDPOINTS = {
     NOTIFICATIONS: {
         LIST: '/notifications',
         MARK_READ: (id) => `/notifications/${id}/read`,
-        MARK_ALL_READ: '/notifications/read-all',
+        MARK_All_READ: '/notifications/mark-all-read',
     },
 
     // Location Management Endpoints
@@ -141,6 +141,11 @@ export const apiService = {
     getPublicRecord: (id) => axios.get(API_ENDPOINTS.PUBLIC_RECORDS.LIST, { params: { id } }),
     verifyPublicRecord: (id, data) => axios.put(API_ENDPOINTS.RECORDS.VERIFY(id), data),
     getLatestApplicantId: () => axios.get(API_ENDPOINTS.PUBLIC_RECORDS.LATEST_APPLICANT_ID),
+    
+    // Notifications
+    getNotifications: (unreadOnly = false) => axios.get(API_ENDPOINTS.NOTIFICATIONS.LIST, { params: { unreadOnly } }),
+    markNotificationAsRead: (id) => axios.put(API_ENDPOINTS.NOTIFICATIONS.MARK_READ(id)),
+    markAllNotificationsAsRead: () => axios.put(API_ENDPOINTS.NOTIFICATIONS.MARK_All_READ),
 
     // Upload
     getPresignedUrl: (fileName, fileType, folder, recordNumber) => {

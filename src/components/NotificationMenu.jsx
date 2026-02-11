@@ -245,21 +245,11 @@ function NotificationMenu() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Notifications disabled - not calling API
-  // useEffect(() => {
-  //   if (isOpen && notifications.length === 0) {
-  //     fetchNotifications();
-  //   }
-  // }, [isOpen]);
-
-  // Poll for new notifications every 30 seconds - DISABLED
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     fetchNotifications();
-  //   }, 30000); // 30 seconds
-
-  //   return () => clearInterval(interval);
-  // }, []);
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 60000); // Poll every minute
+    return () => clearInterval(interval);
+  }, []);
 
   // Show push notification when new notifications arrive
   useEffect(() => {
@@ -278,20 +268,45 @@ function NotificationMenu() {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const response = await apiService.getNotifications();
-      setNotifications(response.data.notifications.map(n => ({
+      // User requested "only if its unread", so we pass true
+      const response = await apiService.getNotifications(true);
+      
+      const notifs = response.data.notifications || [];
+      const unread = response.data.unreadCount || 0;
+
+      setNotifications(notifs.map(n => ({
         id: n._id,
-        icon: n.icon,
+        icon: n.icon || '🔔',
         title: n.title,
         message: n.message,
         time: formatTime(n.createdAt),
-        unread: !n.read
+        unread: !n.read,
+        relatedId: n.relatedId,
+        relatedModel: n.relatedModel
       })));
-      setUnreadCount(response.data.unreadCount);
+      setUnreadCount(unread);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleNotificationClick = async (notification) => {
+    try {
+      // Mark as read in backend
+      await apiService.markNotificationAsRead(notification.id);
+      
+      // Update UI
+      setNotifications(prev => prev.filter(n => n.id !== notification.id));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      
+      setIsOpen(false);
+      
+      // Navigate if needed (optional)
+      // if (notification.relatedId) navigate(...)
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
     }
   };
 
@@ -311,8 +326,7 @@ function NotificationMenu() {
 
   const markAllAsRead = async () => {
     try {
-      await apiService.markAllNotificationsRead();
-      // Clear all notifications from the list after marking as read
+      await apiService.markAllNotificationsAsRead();
       setNotifications([]);
       setUnreadCount(0);
     } catch (error) {
@@ -320,19 +334,17 @@ function NotificationMenu() {
     }
   };
 
-  const hasUnread = unreadCount > 0;
-
   return (
     <NotificationContainer ref={menuRef}>
       <NotificationButton onClick={() => setIsOpen(!isOpen)} title="Notifications">
         <MdNotifications size={22} />
-        {hasUnread && <span className="badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+        {unreadCount > 0 && <span className="badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
       </NotificationButton>
 
       <DropdownMenu $isOpen={isOpen}>
         <MenuHeader>
           <h3>Notifications</h3>
-          {hasUnread && (
+          {unreadCount > 0 && (
             <button onClick={markAllAsRead}>Mark all as read</button>
           )}
         </MenuHeader>
@@ -342,8 +354,8 @@ function NotificationMenu() {
             notifications.map(notification => (
               <NotificationItem
                 key={notification.id}
-                $unread={notification.unread}
-                onClick={() => setIsOpen(false)}
+                $unread={true}
+                onClick={() => handleNotificationClick(notification)}
               >
                 <div className="notification-header">
                   <span className="icon">{notification.icon}</span>
@@ -357,8 +369,8 @@ function NotificationMenu() {
             ))
           ) : (
             <EmptyState>
-              <div className="icon">🔔</div>
-              <div className="text">No notifications</div>
+              <div className="icon">____</div>
+              <div className="text">No new notifications</div>
             </EmptyState>
           )}
         </NotificationList>
