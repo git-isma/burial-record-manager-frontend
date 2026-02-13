@@ -223,26 +223,8 @@ function Settings() {
   //   }
   // };
 
-  const handleExportData = async () => {
-    try {
-      showToast('Preparing data export...', 'info');
-      const res = await apiService.exportData();
-
-      // Create and download JSON file
-      const dataStr = JSON.stringify(res.data, null, 2);
-      const dataBlob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(dataBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `burial-record-data-${new Date().toISOString().split('T')[0]}.json`;
-      link.click();
-      URL.revokeObjectURL(url);
-
-      showToast('Data exported successfully', 'success');
-    } catch (err) {
-      console.error('Error exporting data:', err);
-      showToast('Failed to export data', 'error');
-    }
+  const handleExportData = () => {
+    showToast('Contact Admin/Developer to export data', 'info');
   };
 
   if (loading) {
@@ -355,7 +337,7 @@ function Settings() {
           <SettingItem>
             <div className="setting-info">
               <h4>Export Data</h4>
-              <p>Download all your data as a backup</p>
+              <p>Download all your data as a backup - Contact Admin/Developer</p>
             </div>
             <Button onClick={handleExportData}>Export</Button>
           </SettingItem>
@@ -370,9 +352,9 @@ function Settings() {
           <SettingItem>
             <div className="setting-info">
               <h4>Delete Account</h4>
-              <p>Permanently delete your account and all data</p>
+              <p>Permanently delete your account and all data - Contact Admin/Developer</p>
             </div>
-            <Button className="danger" onClick={() => showToast('Contact admin to delete account', 'error')}>
+            <Button className="danger" onClick={() => showToast('Contact Admin/Developer to delete account', 'info')}>
               Delete Account
             </Button>
           </SettingItem>

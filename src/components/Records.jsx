@@ -536,15 +536,11 @@ function Records({ user }) {
   const handleView = (id) => { navigate(`/document/${id}`); };
   const handleEdit = (id) => { navigate(`/data-capture?edit=${id}`); };
   const handleDownload = (record) => {
-    const fullName = `${record.firstName} ${record.middleName || ''} ${record.lastName}`.replace(/\s+/g, ' ').trim();
-    const recordData = `Burial Record: ${record.recordNumber}\nName: ${fullName}\nDate of Death: ${formatDate(record.dateOfDeath)}\nNext of Kin: ${record.nextOfKinName}\nBurial Location: ${record.burialLocation}\nStatus: ${record.status}`;
-    const blob = new Blob([recordData], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${record.recordNumber}.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
+    if (record.acknowledgementUrl) {
+      window.open(record.acknowledgementUrl, '_blank');
+    } else {
+      showToast('Acknowledgement PDF not available for this record. As it is a dummy record', 'warning');
+    }
   };
 
   const { showToast } = useToast();
