@@ -635,11 +635,11 @@ function DataCapture() {
     burialLocation: "",
     burialTime: "",
     primaryService: "Burial",
-    amountPaidBurial: "",
+    amountPayableBurial: "",
     secondaryService: "None",
-    amountPaidSecondary: 0,
+    amountPayableSecondary: 0,
     tertiaryService: "None",
-    amountPaidTertiary: 0,
+    amountPayableTertiary: 0,
     mpesaRefNo: "",
     receiptNo: "",
     status: "Verification Pending",
@@ -912,11 +912,11 @@ function DataCapture() {
         burialLocation: record.burialLocation || "Block A",
         burialTime: record.burialTime || "",
         primaryService: record.primaryService || "Burial",
-        amountPaidBurial: record.amountPaidBurial || "",
+        amountPayableBurial: record.amountPayableBurial || "",
         secondaryService: record.secondaryService || "None",
-        amountPaidSecondary: record.amountPaidSecondary || 0,
+        amountPayableSecondary: record.amountPayableSecondary || 0,
         tertiaryService: record.tertiaryService || "None",
-        amountPaidTertiary: record.amountPaidTertiary || 0,
+        amountPayableTertiary: record.amountPayableTertiary || 0,
         mpesaRefNo: record.mpesaRefNo || "",
         receiptNo: record.receiptNo || "",
         status:
@@ -963,7 +963,7 @@ function DataCapture() {
       const locationName = name === "burialLocation" ? value : formData.burialLocation;
       const time = name === "burialTime" ? value : formData.burialTime;
 
-      let amount = formData.amountPaidBurial;
+      let amount = formData.amountPayableBurial;
       if (locationName && time) {
         // Find location in dynamic data
         const loc = locationData.find(l => (typeof l === 'string' ? l === locationName : l.name === locationName));
@@ -973,7 +973,7 @@ function DataCapture() {
           amount = 0;
         }
       }
-      setFormData({ ...formData, [name]: value, amountPaidBurial: amount });
+      setFormData({ ...formData, [name]: value, amountPayableBurial: amount });
     } else {
       setFormData({ ...formData, [name]: value });
     }
@@ -985,9 +985,9 @@ function DataCapture() {
 
   // Validation functions
   const validateMobileNumber = (phone) => {
-    // Accept exactly 10 digits
-    const phoneRegex = /^[\d\s\-\+\(\)]{10}$/;
-    return phoneRegex.test(phone.replace(/\s/g, ""));
+    // Allow at least 10 digits
+    const phoneRegex = /^[0-9]{10,}$/;
+    return phoneRegex.test(phone.replace(/\D/g, ""));
   };
 
   const validateEmail = (email) => {
@@ -1137,9 +1137,9 @@ function DataCapture() {
         "middleName",
         "idPassportNo",
         "nextOfKinIdPassport",
-        "amountPaidBurial",
-        "amountPaidSecondary",
-        "amountPaidTertiary",
+        "amountPayableBurial",
+        "amountPayableSecondary",
+        "amountPayableTertiary",
         "mpesaRefNo",
         "secondaryService",
         "tertiaryService",
@@ -1193,11 +1193,11 @@ function DataCapture() {
           burialLocation: "Block A",
           burialTime: "",
           primaryService: "Burial",
-          amountPaidBurial: "",
+          amountPayableBurial: "",
           secondaryService: "None",
-          amountPaidSecondary: "",
+          amountPayableSecondary: "",
           tertiaryService: "None",
-          amountPaidTertiary: "",
+          amountPayableTertiary: "",
           mpesaRefNo: "",
           receiptNo: "",
           status: "Verification Pending",
@@ -1236,11 +1236,11 @@ function DataCapture() {
       burialLocation: "Block A",
       burialTime: "",
       primaryService: "Burial",
-      amountPaidBurial: "",
+      amountPayableBurial: "",
       secondaryService: "None",
-      amountPaidSecondary: "",
+      amountPayableSecondary: "",
       tertiaryService: "None",
-      amountPaidTertiary: "",
+      amountPayableTertiary: "",
       mpesaRefNo: "",
       receiptNo: "",
       status: "Verification Pending",
@@ -1565,6 +1565,8 @@ function DataCapture() {
                 <option value="Child">Child</option>
                 <option value="Parent">Parent</option>
                 <option value="Sibling">Sibling</option>
+                <option value="Relative">Relative</option>
+                <option value="Friend">Friend</option>
                 <option value="Other">Other</option>
               </select>
             </FormGroup>
@@ -1586,7 +1588,7 @@ function DataCapture() {
                   {validateMobileNumber(formData.nextOfKinContact) ? (
                     <span style={{ color: "#10b981" }}>✓ Valid mobile number</span>
                   ) : (
-                    <span style={{ color: "#ef4444" }}>✗ Must be 10 digits</span>
+                    <span style={{ color: "#ef4444" }}>✗ Must be at least 10 digits</span>
                   )}
                 </HelperText>
               )}
@@ -1725,7 +1727,7 @@ function DataCapture() {
                   {validateMobileNumber(formData.burialPermitIssuedToContact) ? (
                     <span style={{ color: "#10b981" }}>✓ Valid mobile number</span>
                   ) : (
-                    <span style={{ color: "#ef4444" }}>✗ Must be 10 digits</span>
+                    <span style={{ color: "#ef4444" }}>✗ Must be at least 10 digits</span>
                   )}
                 </HelperText>
               )}
@@ -1863,12 +1865,12 @@ function DataCapture() {
               />
             </FormGroup>
             <FormGroup>
-              <label htmlFor="amountPaidBurial">Amount Payable for Burial</label>
+              <label htmlFor="amountPayableBurial">Amount Payable for Burial</label>
               <input
-                id="amountPaidBurial"
+                id="amountPayableBurial"
                 type="number"
-                name="amountPaidBurial"
-                value={formData.amountPaidBurial}
+                name="amountPayableBurial"
+                value={formData.amountPayableBurial}
                 onChange={handleChange}
                 placeholder="Auto-calculated"
                 min="0"
@@ -1891,11 +1893,11 @@ function DataCapture() {
               </select>
             </FormGroup>
             <FormGroup>
-              <label>Amount Paid for Secondary Service</label>
+              <label>Amount Payable for Secondary Service</label>
               <input
                 type="number"
-                name="amountPaidSecondary"
-                value={formData.amountPaidSecondary}
+                name="amountPayableSecondary"
+                value={formData.amountPayableSecondary}
                 onChange={handleChange}
                 placeholder="Enter amount"
                 min="0"
@@ -1917,11 +1919,11 @@ function DataCapture() {
               </select>
             </FormGroup>
             <FormGroup>
-              <label>Amount Paid for Other Services</label>
+              <label>Amount Payable for Other Services</label>
               <input
                 type="number"
-                name="amountPaidTertiary"
-                value={formData.amountPaidTertiary}
+                name="amountPayableTertiary"
+                value={formData.amountPayableTertiary}
                 onChange={handleChange}
                 placeholder="Enter amount"
                 min="0"

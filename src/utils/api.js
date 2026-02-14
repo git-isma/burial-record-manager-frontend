@@ -46,7 +46,7 @@ export const API_ENDPOINTS = {
         DELETE: (id) => `/records/${id}`,
         BULK_DELETE: '/records',
         VERIFY: (id) => `/records/verify-public/${id}`,
-        LATEST_NUMBER: '/records/latest-number',
+        LATEST_NUMBER: '/records/latest-record-number',
         LATEST_RECEIPT_NUMBER: '/records/latest-receipt-number',
     },
 
@@ -72,7 +72,7 @@ export const API_ENDPOINTS = {
     NOTIFICATIONS: {
         LIST: '/notifications',
         MARK_READ: (id) => `/notifications/${id}/read`,
-        MARK_ALL_READ: '/notifications/read-all',
+        MARK_All_READ: '/notifications/mark-all-read',
     },
 
     // Location Management Endpoints
@@ -85,7 +85,7 @@ export const API_ENDPOINTS = {
 
     // Receipt Number Endpoints
     RECEIPT: {
-        LATEST: '/records/latest-receipt-no',
+        LATEST: '/records/latest-receipt-number',
     },
 };
 
@@ -141,6 +141,11 @@ export const apiService = {
     getPublicRecord: (id) => axios.get(API_ENDPOINTS.PUBLIC_RECORDS.LIST, { params: { id } }),
     verifyPublicRecord: (id, data) => axios.put(API_ENDPOINTS.RECORDS.VERIFY(id), data),
     getLatestApplicantId: () => axios.get(API_ENDPOINTS.PUBLIC_RECORDS.LATEST_APPLICANT_ID),
+    
+    // Notifications
+    getNotifications: (unreadOnly = false) => axios.get(API_ENDPOINTS.NOTIFICATIONS.LIST, { params: { unreadOnly } }),
+    markNotificationAsRead: (id) => axios.put(API_ENDPOINTS.NOTIFICATIONS.MARK_READ(id)),
+    markAllNotificationsAsRead: () => axios.put(API_ENDPOINTS.NOTIFICATIONS.MARK_All_READ),
 
     // Upload
     getPresignedUrl: (fileName, fileType, folder, recordNumber) => {

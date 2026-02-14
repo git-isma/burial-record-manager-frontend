@@ -714,10 +714,10 @@ Status: ${record.status}
 
           <StatCard>
             <div className="stat-header">
-              <div className="stat-label">User Activity</div>
-              <div className="stat-icon" style={{ background: isDarkMode ? 'rgba(129, 140, 248, 0.1)' : '#f5f7ff' }}><MdPeople size={20} color="#818cf8" /></div>
+              <div className="stat-label">Rejected</div>
+              <div className="stat-icon" style={{ background: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2' }}><MdWarning size={20} color="#ef4444" /></div>
             </div>
-            <div className="stat-value" style={{ letterSpacing: '-0.02em' }}>14.2k</div>
+            <div className="stat-value" style={{ letterSpacing: '-0.02em' }}>{stats.rejectedRecords?.toLocaleString() || 0}</div>
           </StatCard>
         </StatsGrid>
       </OverviewSection>
@@ -857,7 +857,7 @@ Status: ${record.status}
       </RecentUploadsSection>
 
       <div style={{ textAlign: 'center', padding: '24px', color: isDarkMode ? '#6d6d6d' : theme.colors.gray500, fontSize: '12px' }}>
-        © 2025 Burial Legacy Application. All rights reserved.
+        © 2026 Burial Legacy Application. All rights reserved.
       </div>
     </DashboardContainer>
   );

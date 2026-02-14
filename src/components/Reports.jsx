@@ -113,38 +113,65 @@ const PrintHeader = styled.div`
     display: flex;
     flex-direction: row;
     align-items: center;
-    justify-content: center;
-    gap: 24px;
-    margin-bottom: 30px;
-    border-bottom: 2px solid ${theme.colors.primary};
-    padding-bottom: 24px;
+    background-color: ${theme.colors.primary} !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    padding: 20px 30px;
+    margin: -1px -1px 30px -1px;
+    color: white !important;
 
     .print-logo {
-      width: 80px;
-      height: 80px;
+      width: 75px;
+      height: 75px;
+      background: white;
+      padding: 5px;
+      border-radius: 4px;
       object-fit: contain;
     }
 
     .header-text {
-      text-align: left;
+      text-align: center;
+      flex: 1;
+      margin-left: -20px;
     }
 
     h1 {
-      font-size: 28px;
-      font-weight: 800;
-      color: #0f172a;
+      font-size: 24px;
+      font-weight: 700;
+      color: white !important;
       margin: 0;
-      line-height: 1.1;
-      text-transform: none;
+      line-height: 1.2;
     }
     
-    .report-info {
+    .tagline {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.9) !important;
+      margin-top: 5px;
+    }
+
+    .contact-line {
+      font-size: 9px;
+      color: rgba(255, 255, 255, 0.85) !important;
+      margin-top: 3px;
+    }
+
+    .report-meta {
+      margin-top: 12px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .report-title {
       font-size: 14px;
-      color: #64748b;
-      margin-top: 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
+      font-weight: 700;
+      color: white !important;
+    }
+
+    .report-date {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.9) !important;
     }
   }
 `;
@@ -587,8 +614,7 @@ function Reports() {
       const genderStats = res.data.genderStats || [];
       setGenderData([
         { name: 'Male', value: genderStats.find(g => g._id === 'Male')?.count || 0 },
-        { name: 'Female', value: genderStats.find(g => g._id === 'Female')?.count || 0 },
-        { name: 'Unknown', value: genderStats.find(g => g._id === 'Unknown' || g._id === 'Other')?.count || 0 }
+        { name: 'Female', value: genderStats.find(g => g._id === 'Female')?.count || 0 }
       ]);
 
       const monthlyTrend = res.data.monthlyTrend || [];
@@ -691,29 +717,53 @@ function Reports() {
       const pageHeight = pdf.internal.pageSize.getHeight();
       let yPosition = 10;
 
-      // Add Title Header (Logo Left, Text Right)
-      pdf.addImage(ismaLogo, 'PNG', 15, 8, 25, 25);
+      // --- HEADER ---
+      pdf.setFillColor(30, 64, 175); // theme.colors.primary (#1e40af)
+      pdf.rect(0, 0, pageWidth, 48, 'F');
 
-      pdf.setTextColor(15, 23, 42); // #0f172a
-      pdf.setFontSize(22);
+      try {
+        // Logo with white background for contrast
+        pdf.setFillColor(255, 255, 255);
+        pdf.roundedRect(12, 6, 28, 28, 1, 1, 'F');
+        pdf.addImage(ismaLogo, 'PNG', 13, 7, 26, 26);
+      } catch (logoErr) {
+        console.warn('Could not add logo to PDF:', logoErr);
+      }
+
+      const centerX = (pageWidth + 30) / 2;
+
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(18);
       pdf.setFont('helvetica', 'bold');
-      pdf.text('Islamia School &', 45, 18);
-      pdf.text('Mosque Association', 45, 28);
+      pdf.text('Islamia School & Mosque Association', centerX, 15, { align: 'center' });
 
-      yPosition = 40;
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(240, 240, 255);
+      pdf.text('CUSTODIANS OF THE SUNNI MUSLIM CEMETERIES - KARIOKOR & LANGATA', centerX, 21, { align: 'center' });
 
-      // Add Report Details (Centered below the header)
-      pdf.setTextColor(100, 116, 139); // #64748b
-      pdf.setFontSize(12);
+      pdf.setFontSize(8);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`${filters.reportType} Burial Record Report`, pageWidth / 2, yPosition, { align: 'center' });
-      yPosition += 8;
+      pdf.setTextColor(220, 220, 255);
+      pdf.text('P.O. Box 21015 - 00500 NAIROBI | Cell / Whatsapp: +254 113217749 | Email: office@isma.co.ke', centerX, 26, { align: 'center' });
 
-      // Add date
-      pdf.setFontSize(10);
+      // Separator line
+      pdf.setDrawColor(255, 255, 255);
+      pdf.setLineWidth(0.2);
+      pdf.line(42, 29, pageWidth - 15, 29);
+
+      // Report Details (White text over blue)
+      pdf.setFontSize(13);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(255, 255, 255);
+      pdf.text(`${filters.reportType.toUpperCase()} BURIAL RECORD REPORT`, centerX, 37, { align: 'center' });
+
+      pdf.setFontSize(8);
+      pdf.setTextColor(230, 230, 255);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`Generated: ${formatDate(new Date())}`, pageWidth / 2, yPosition, { align: 'center' });
-      yPosition += 10;
+      pdf.text(`Generated on: ${formatDate(new Date())}`, centerX, 42, { align: 'center' });
+
+      yPosition = 60;
 
       // Capture Stats Grid
       const statsGrid = document.getElementById('stats-grid-pdf');
@@ -775,13 +825,15 @@ function Reports() {
           `${record.firstName || ''} ${record.middleName || ''} ${record.lastName || ''}`.replace(/\s+/g, ' ').trim(),
           record.dateOfDeath ? formatDate(record.dateOfDeath) : '',
           record.burialLocation || '',
+          record.receiptNo || '',
+          record.tempReceiptNo || '',
           record.gender || '',
           record.status || ''
         ]);
 
         autoTable(pdf, {
           startY: 20,
-          head: [['Record No.', 'Name', 'Date of Death', 'Burial Location', 'Gender', 'Status']],
+          head: [['Record No.', 'Name', 'Date of Death', 'Location', 'Receipt', 'Temp Receipt', 'Gender', 'Status']],
           body: tableData,
           styles: {
             fontSize: 8,
@@ -837,12 +889,14 @@ function Reports() {
       // Only include specific record sheets for Detailed reports
       if (filters.reportType === 'Detailed') {
         // Records sheet - using array of arrays for better control
-        const recordsHeaders = ['Record Number', 'Full Name', 'Date of Death', 'Burial Location', 'Gender', 'Age', 'Status'];
+        const recordsHeaders = ['Record Number', 'Full Name', 'Date of Death', 'Burial Location', 'Receipt No', 'Temp Receipt No', 'Gender', 'Age', 'Status'];
         const recordsRows = allRecords.map(record => [
           record.recordNumber || '',
           `${record.firstName || ''} ${record.middleName || ''} ${record.lastName || ''}`.replace(/\s+/g, ' ').trim(),
           record.dateOfDeath ? formatDate(record.dateOfDeath) : '',
           record.burialLocation || '',
+          record.receiptNo || '',
+          record.tempReceiptNo || '',
           record.gender || '',
           record.age || '',
           record.status || '',
@@ -858,6 +912,8 @@ function Reports() {
           { wch: 25 }, // Full Name
           { wch: 15 }, // Date of Death
           { wch: 20 }, // Burial Location
+          { wch: 15 }, // Receipt No
+          { wch: 15 }, // Temp Receipt No
           { wch: 10 }, // Gender
           { wch: 8 },  // Age
           { wch: 12 }, // Status
@@ -937,10 +993,12 @@ function Reports() {
           csvContent += row.map(cell => `"${cell}"`).join(',') + '\n';
         });
       } else {
-        const headers = ['Record Number', 'Full Name', 'Date of Death', 'Burial Location', 'Gender', 'Age', 'Status'];
+        const headers = ['Record Number', 'Full Name', 'Receipt No', 'Temp Receipt No', 'Date of Death', 'Burial Location', 'Gender', 'Age', 'Status'];
         const rows = allRecords.map(record => [
           record.recordNumber,
           `${record.firstName || ''} ${record.middleName || ''} ${record.lastName || ''}`.replace(/\s+/g, ' ').trim(),
+          record.receiptNo || '',
+          record.tempReceiptNo || '',
           formatDate(record.dateOfDeath),
           record.burialLocation,
           record.gender,
@@ -1019,10 +1077,12 @@ Status: ${record.status}
       <PrintHeader>
         <img src={ismaLogo} alt="Islamia School & Mosque Association Logo" className="print-logo" />
         <div className="header-text">
-          <h1>Islamia School &<br />Mosque Association</h1>
-          <div className="report-info">
-            <span style={{ fontWeight: 600 }}>{filters.reportType} Burial Record Report</span>
-            <span>Generated on: {formatDate(new Date())}</span>
+          <h1>Islamia School & Mosque Association</h1>
+          <div className="tagline">Custodians of The Sunni Muslim Cemeteries - KARIOKOR & LANGATA</div>
+          <div className="contact-line">P.O. Box 21015 - 00500 NAIROBI | Cell / Whatsapp: +254 113217749 | Email: office@isma.co.ke</div>
+          <div className="report-meta">
+            <div className="report-title">{filters.reportType} Burial Record Report</div>
+            <div className="report-date">Generated: {formatDate(new Date())}</div>
           </div>
         </div>
       </PrintHeader>
@@ -1242,6 +1302,7 @@ Status: ${record.status}
                     <th>Name</th>
                     <th>Date of Death</th>
                     <th>Burial Location</th>
+                    <th>Receipt No</th>
                     <th>Gender</th>
                     <th>Status</th>
                     <th>Actions</th>
@@ -1254,6 +1315,16 @@ Status: ${record.status}
                       <td>{`${record.firstName || ''} ${record.middleName || ''} ${record.lastName || ''}`.replace(/\s+/g, ' ').trim()}</td>
                       <td>{formatDate(record.dateOfDeath)}</td>
                       <td>{record.burialLocation}</td>
+                      <td>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontWeight: 600 }}>{record.receiptNo}</span>
+                          {record.tempReceiptNo && (
+                            <span style={{ fontSize: '11px', color: theme.colors.gray500 }}>
+                              Temp: {record.tempReceiptNo}
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td>{record.gender}</td>
                       <td><StatusBadge $status={record.status}>{record.status}</StatusBadge></td>
                       <td>
@@ -1313,7 +1384,7 @@ Status: ${record.status}
       )}
 
       <div style={{ textAlign: 'center', padding: '24px', color: isDarkMode ? '#6d6d6d' : theme.colors.gray500, fontSize: '12px' }}>
-        © 2025 Burial Legacy Application by Islamia School & Mosque Association. All rights reserved.
+        © 2026 Burial Legacy Application by Islamia School & Mosque Association. All rights reserved.
       </div>
 
 

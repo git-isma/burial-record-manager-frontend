@@ -99,7 +99,7 @@ const SidebarHeader = styled.div`
 
   @media (min-width: 768px) {
     display: block;
-    padding: 24px 16px;
+    padding: 24px 16px 0 16px;
     border-right: none;
     border-bottom: 1px solid ${theme.colors.gray200};
 
@@ -108,7 +108,7 @@ const SidebarHeader = styled.div`
       flex-direction: column;
       align-items: center;
       text-align: center;
-      gap: 16px;
+      width: 100%;
       
       img {
         width: 100px;
@@ -118,20 +118,49 @@ const SidebarHeader = styled.div`
         border-radius: 12px;
         padding: 4px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        margin-bottom: 20px;
+      }
+
+      .org-address {
+        margin: 16px 0 0 0;
+        padding: 12px 0;
+        border-top: 1px solid ${theme.colors.gray200};
+        border-bottom: 1px solid ${theme.colors.gray200};
+        width: 100%;
+        font-size: 11px;
+        color: ${theme.colors.gray500};
+
+        body.dark-theme & {
+          border-top-color: #404040;
+          border-bottom-color: #404040;
+          color: #a0a0a0;
+        }
+
+        p {
+          margin: 3px 0;
+          font-weight: 500;
+          text-transform: none;
+          letter-spacing: normal;
+          line-height: 1.4;
+        }
       }
 
       .brand-text {
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        align-items: center;
+        gap: 6px;
+        width: 100%;
+        margin: 0;
 
         h2 {
-          font-size: 16px;
+          font-size: 15px;
           font-weight: 900;
           color: #6366f1; /* Vibrant blue/purple */
           margin: 0;
-          letter-spacing: 0.05em;
+          letter-spacing: 0.02em;
           text-transform: uppercase;
+          line-height: 1.3;
           font-family: 'Inter', system-ui, sans-serif;
         }
 
@@ -140,7 +169,7 @@ const SidebarHeader = styled.div`
           font-weight: 700;
           color: #64748b;
           margin: 0;
-          letter-spacing: 0.05em;
+          letter-spacing: 0.08em;
           text-transform: uppercase;
 
           body.dark-theme & {
@@ -351,7 +380,7 @@ const SidebarFooter = styled.div`
   border-left: 1px solid ${theme.colors.gray200};
   background: white;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   gap: 4px;
 
   body.dark-theme & {
@@ -364,7 +393,6 @@ const SidebarFooter = styled.div`
     padding: 12px;
     border-left: none;
     border-top: 1px solid ${theme.colors.gray200};
-    flex-direction: column;
     gap: 2px;
 
     body.dark-theme & {
@@ -528,10 +556,19 @@ function Layout({ user, onLogout }) {
       <Sidebar>
         <SidebarHeader>
           <div className="logo-container">
+            <div className="brand-text">
+              <p>BURIAL LEGACY APPLICATION</p>
+            </div>
             <img src={ismaLogo} alt="Logo" />
             <div className="brand-text">
               <h2>Islamia School & Mosque Association</h2>
-              <p>BURIAL LEGACY APPLICATION</p>
+            </div>
+            <div className="org-address">
+              <p>CUSTODIANS OF THE SUNNI MUSLIM</p>
+              <p>CEMETERIES - KARIOKOR & LANGATA</p>
+              <p>P.O. Box 21015 - 00500 NAIROBI</p>
+              <p>Cell / Whatsapp: +254 113217749</p>
+              <p>Email: office@isma.co.ke</p>
             </div>
           </div>
         </SidebarHeader>

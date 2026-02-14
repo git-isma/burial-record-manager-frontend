@@ -266,6 +266,14 @@ function DocumentViewer() {
         </InfoSection>
 
         <InfoSection>
+          <strong><MdInfo size={16} /> Receipt Details</strong>
+          <p>Receipt No: {record.receiptNo || 'N/A'}</p>
+          {record.tempReceiptNo && (
+            <p style={{ fontSize: '13px', color: '#6b7280' }}>Temp: {record.tempReceiptNo}</p>
+          )}
+        </InfoSection>
+
+        <InfoSection>
           <strong><MdPerson size={16} /> Next of Kin</strong>
           <p>{record.nextOfKinName}</p>
           <p style={{ fontSize: '13px', color: '#6b7280' }}>{record.nextOfKinContact}</p>

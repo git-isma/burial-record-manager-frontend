@@ -251,7 +251,7 @@ const ConfirmIcon = styled.div`
   }
 `;
 
-const ConfirmMessage = styled.p`
+const ConfirmMessage = styled.div`
   margin: 0;
   color: ${theme.colors.textSecondary};
   text-align: center;
