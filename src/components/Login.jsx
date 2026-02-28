@@ -406,6 +406,9 @@ function Login({ onLogin }) {
           <p>Password: admin123</p>
         </InfoBox>
       </LoginCard>
+      <div style={{ position: 'absolute', bottom: '20px', left: 0, width: '100%', textAlign: 'center', color: 'rgba(255,255,255,0.7)', fontSize: '12px', zIndex: 10 }}>
+        © 2026 Islamia School & Mosque Association. All rights reserved.
+      </div>
     </LoginContainer>
   );
 }

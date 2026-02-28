@@ -33,10 +33,12 @@ import {
   MdAdd,
   MdDelete,
   MdList,
+  MdQrCode2,
 } from "react-icons/md";
 import { InlineSpinner } from "./Spinner";
 import Tooltip from "./Tooltip";
 import { countries } from "../utils/countries";
+import paymentQrUrl from "../assets/payment-qr.jpeg";
 
 const SectionTitle = styled.h3`
   margin-top: ${(props) => (props.$first ? "0" : theme.spacing.xl)};
@@ -636,6 +638,7 @@ function DataCapture() {
     burialTime: "",
     primaryService: "Burial",
     amountPayableBurial: "",
+    amountToPayNow: "",
     secondaryService: "None",
     amountPayableSecondary: 0,
     tertiaryService: "None",
@@ -663,11 +666,12 @@ function DataCapture() {
   const [showNewLocationInput, setShowNewLocationInput] = useState(false);
   const [newLocationName, setNewLocationName] = useState("");
   const [showManageModal, setShowManageModal] = useState(false);
+  const [showQRPreview, setShowQRPreview] = useState(false);
   const [locationData, setLocationData] = useState([]);
   const [newLocationDaytimePrice, setNewLocationDaytimePrice] = useState(16000);
   const [newLocationNighttimePrice, setNewLocationNighttimePrice] = useState(22000);
   const [editingLocation, setEditingLocation] = useState(null);
- // Array of objects {id, name}
+  // Array of objects {id, name}
 
 
   const isFormValid = () => {
@@ -706,11 +710,11 @@ function DataCapture() {
     // Check if attachments are required
     // Now required for ALL categories (Stillborn, Infant, Adult, Child)
     // Check if exempt from other fields? reusing isExempt for that purpose (firstName/lastName) is fine.
-    
+
     // Attachments valid logic:
     // Must have at least one attachment if new record (not editId), or if editId but we want to ensure they exist (though usually we trust existing records).
     // Let's assume validation is: if (!editId && total < 1) -> invalid.
-    
+
     const hasAttachments = files.length > 0 || (existingAttachments && existingAttachments.length > 0);
     const attachmentsValid = editId || hasAttachments;
 
@@ -854,7 +858,7 @@ function DataCapture() {
     try {
       console.log('🔄 Fetching latest record number from server...');
       const response = await apiService.getLatestRecordNumber();
-      
+
       if (response.data && response.data.recordNumber) {
         console.log(`✅ Generated record number: ${response.data.recordNumber}`);
         setFormData((prev) => ({ ...prev, recordNumber: response.data.recordNumber }));
@@ -876,7 +880,7 @@ function DataCapture() {
     try {
       console.log('🔄 Fetching latest receipt number from server...');
       const response = await apiService.getLatestReceiptNumber();
-      
+
       if (response.data && response.data.receiptNo) {
         console.log(`✅ Generated receipt number: ${response.data.receiptNo}`);
         setFormData((prev) => ({ ...prev, receiptNo: response.data.receiptNo }));
@@ -913,6 +917,7 @@ function DataCapture() {
         burialTime: record.burialTime || "",
         primaryService: record.primaryService || "Burial",
         amountPayableBurial: record.amountPayableBurial || "",
+        amountToPayNow: record.amountToPayNow !== undefined ? record.amountToPayNow : (record.amountPayableBurial || ""),
         secondaryService: record.secondaryService || "None",
         amountPayableSecondary: record.amountPayableSecondary || 0,
         tertiaryService: record.tertiaryService || "None",
@@ -973,14 +978,21 @@ function DataCapture() {
           amount = 0;
         }
       }
-      setFormData({ ...formData, [name]: value, amountPayableBurial: amount });
+      setFormData({ ...formData, [name]: value, amountPayableBurial: amount, amountToPayNow: amount });
     } else {
       setFormData({ ...formData, [name]: value });
     }
   };
 
   const handleFileChange = (e) => {
-    setFiles(Array.from(e.target.files));
+    if (e.target.files && e.target.files.length > 0) {
+      const selectedFiles = Array.from(e.target.files);
+      setFiles((prevFiles) => [...prevFiles, ...selectedFiles]);
+    }
+  };
+
+  const handleRemoveFile = (indexToRemove) => {
+    setFiles((prevFiles) => prevFiles.filter((_, index) => index !== indexToRemove));
   };
 
   // Validation functions
@@ -1031,6 +1043,14 @@ function DataCapture() {
     // Validate Mpesa ref no if provided
     if (formData.mpesaRefNo && !validateMpesaRefNo(formData.mpesaRefNo)) {
       error("M-Pesa Reference No must be exactly 10 alphanumeric characters");
+      return;
+    }
+
+    // Validate amount to pay now
+    const amountToPay = parseFloat(formData.amountToPayNow || 0);
+    const amountPayable = parseFloat(formData.amountPayableBurial || 0);
+    if (amountToPay > amountPayable) {
+      error("Amount to Pay Now cannot exceed Amount Payable for Burial");
       return;
     }
 
@@ -1087,18 +1107,18 @@ function DataCapture() {
     const totalAttachments = files.length + existingAttachments.length;
 
     if (!editId) {
-        if (formData.ageCategory === "Stillborn" && totalAttachments < 1) {
-            error("Medical Certificate of Stillbirth is required for Stillborn category. Please upload it.");
-            return;
-        }
-        if (formData.ageCategory === "Infant" && totalAttachments < 1) {
-            error("Birth Certificate is required for Infant category. Please upload it.");
-            return;
-        }
-        if (["Adult", "Child"].includes(formData.ageCategory) && totalAttachments < 1) {
-             error("Attachments are required for this age category. Please upload at least one document.");
-             return;
-        }
+      if (formData.ageCategory === "Stillborn" && totalAttachments < 1) {
+        error("Medical Certificate of Stillbirth is required for Stillborn category. Please upload it.");
+        return;
+      }
+      if (formData.ageCategory === "Infant" && totalAttachments < 1) {
+        error("Birth Certificate is required for Infant category. Please upload it.");
+        return;
+      }
+      if (["Adult", "Child"].includes(formData.ageCategory) && totalAttachments < 1) {
+        error("Attachments are required for this age category. Please upload at least one document.");
+        return;
+      }
     }
 
     if (!termsAccepted) {
@@ -1138,6 +1158,7 @@ function DataCapture() {
         "idPassportNo",
         "nextOfKinIdPassport",
         "amountPayableBurial",
+        "amountToPayNow",
         "amountPayableSecondary",
         "amountPayableTertiary",
         "mpesaRefNo",
@@ -1194,6 +1215,7 @@ function DataCapture() {
           burialTime: "",
           primaryService: "Burial",
           amountPayableBurial: "",
+          amountToPayNow: "",
           secondaryService: "None",
           amountPayableSecondary: "",
           tertiaryService: "None",
@@ -1237,6 +1259,7 @@ function DataCapture() {
       burialTime: "",
       primaryService: "Burial",
       amountPayableBurial: "",
+      amountToPayNow: "",
       secondaryService: "None",
       amountPayableSecondary: "",
       tertiaryService: "None",
@@ -1875,8 +1898,95 @@ function DataCapture() {
                 placeholder="Auto-calculated"
                 min="0"
                 readOnly
-                style={{ backgroundColor: "#f3f4f6", color: theme.colors.textPrimary, fontWeight: 600 }}
+                style={{ backgroundColor: "#f3f4f6", color: theme.colors.textPrimary, fontWeight: 600, width: "100%" }}
               />
+              <HelperText style={{ marginTop: "8px", alignItems: "flex-start" }}>
+                <MdInfoOutline size={16} style={{ marginRight: "6px", flexShrink: 0, marginTop: "2px" }} />
+                <span>Automatically calculated standard fee based on location and time.</span>
+              </HelperText>
+            </FormGroup>
+            <FormGroup>
+              <label htmlFor="amountToPayNow">
+                Amount to Pay Now *
+                <Tooltip
+                  content="Enter the actual amount being paid today. This defaults to the standard fee but can be lowered for committee-approved concessions or installments."
+                  position="right"
+                  multiline={true}
+                  width="400px"
+                >
+                  <InfoIcon>
+                    <MdInfoOutline size={18} />
+                  </InfoIcon>
+                </Tooltip>
+              </label>
+              <input
+                id="amountToPayNow"
+                type="number"
+                name="amountToPayNow"
+                value={formData.amountToPayNow}
+                onChange={handleChange}
+                placeholder="Enter amount to pay"
+                min="0"
+                required
+              />
+              <HelperText style={{ marginTop: "8px", alignItems: "flex-start" }}>
+                <MdInfoOutline size={16} style={{ marginRight: "6px", flexShrink: 0, marginTop: "2px" }} />
+                <span><strong>Please enter this exact amount manually</strong> upon redirection to Pesawise.</span>
+              </HelperText>
+            </FormGroup>
+
+            <FormGroup>
+              <div style={{ display: "flex", height: "100%", alignItems: "stretch", backgroundColor: "var(--bg-card)", padding: "16px", borderRadius: "8px", border: "1px solid var(--border-color, #e5e7eb)", boxSizing: "border-box" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1, paddingRight: "16px", justifyContent: "flex-start", alignItems: "center" }}>
+                  <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-primary)" }}>Pay via Link</span>
+                  <div style={{ height: "80px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Button
+                      as="a"
+                      href="https://payments.pesawise.com/link/lmaiundtro"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      $variant="primary"
+                      style={{
+                        padding: "8px 16px",
+                        textDecoration: "none",
+                        whiteSpace: "nowrap",
+                        minHeight: "44px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: "max-content"
+                      }}
+                    >
+                      PAY HERE
+                    </Button>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", flex: 1, borderLeft: "2px dashed var(--border-color, #d1d5db)", paddingLeft: "16px" }}>
+                  <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-primary)" }}>Or Scan to Pay</span>
+                  <div
+                    onClick={() => setShowQRPreview(true)}
+                    style={{
+                      width: "80px",
+                      height: "80px",
+                      borderRadius: "12px",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: "#f9fafb", // dim background
+                      border: "1px dashed #e5e7eb",
+                      color: "#6366f1", // PAY HERE button color in staff frontend
+                    }}
+                  >
+                    <MdQrCode2 size={48} />
+                  </div>
+                  <span style={{ fontSize: "11px", color: "var(--text-secondary, #6b7280)", marginTop: "2px" }}>
+                    Click to view QR Code
+                  </span>
+                </div>
+              </div>
             </FormGroup>
             {/* 
             <FormGroup>
@@ -2113,7 +2223,55 @@ function DataCapture() {
               />
             </FileUploadArea>
             {files.length > 0 && (
-              <FileInfo>{files.length} file(s) selected</FileInfo>
+              <ExistingAttachmentsSection style={{ marginTop: "16px", background: "transparent", border: "1px dashed var(--border-color, #cbd5e1)" }}>
+                <h4 style={{ margin: "0 0 16px 0", fontSize: "14px", fontWeight: "600", color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <MdAttachFile size={18} /> Selected Files - Ready to Upload ({files.length})
+                </h4>
+                <AttachmentsList>
+                  {files.map((file, index) => {
+                    const fileExtension = file.name.split(".").pop().toUpperCase();
+                    let fileIcon = "📄";
+                    if (fileExtension === "PDF") fileIcon = "📕";
+                    else if (["JPG", "JPEG", "PNG"].includes(fileExtension)) fileIcon = "🖼️";
+
+                    // Create an object URL for preview
+                    const fileUrl = URL.createObjectURL(file);
+
+                    return (
+                      <AttachmentItem 
+                        key={index} 
+                        href={fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => {
+                          // Allow the click to go through to open the link, but manage the URL cleanup later if needed
+                        }}
+                        style={{ cursor: "pointer" }}
+                        title={`Preview ${file.name}`}
+                      >
+                        <div className="file-icon">{fileIcon}</div>
+                        <div className="file-info">
+                          <p className="file-name" title={file.name}>{file.name}</p>
+                          <p className="file-date">{(file.size / 1024 / 1024).toFixed(2)} MB • Ready</p>
+                        </div>
+                        <button 
+                          type="button" 
+                          onClick={(e) => { 
+                            e.preventDefault(); // Prevent opening the link when clicking remove
+                            e.stopPropagation(); 
+                            handleRemoveFile(index); 
+                            URL.revokeObjectURL(fileUrl); // Clean up memory
+                          }} 
+                          style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "4px" }} 
+                          title="Remove file"
+                        >
+                          <MdCancel size={24} />
+                        </button>
+                      </AttachmentItem>
+                    );
+                  })}
+                </AttachmentsList>
+              </ExistingAttachmentsSection>
             )}
           </FormGroup>
 
@@ -2239,6 +2397,26 @@ function DataCapture() {
         </form>
       </Card>
 
+      <Modal
+        isOpen={showQRPreview}
+        onClose={() => setShowQRPreview(false)}
+        title="Scan to Pay"
+        maxWidth="400px"
+      >
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '16px' }}>
+          <img
+            src={paymentQrUrl}
+            alt="Payment QR Code"
+            style={{
+              width: '100%',
+              height: 'auto',
+              borderRadius: '12px',
+              border: '1px solid #e5e7eb'
+            }}
+          />
+        </div>
+      </Modal>
+
       {/* Location Management Modal */}
       {showManageModal && (
         <Modal
@@ -2273,14 +2451,14 @@ function DataCapture() {
                       ) : (
                         <Button $variant="secondary" $size="small" onClick={() => setEditingLocation({ ...loc })}>Edit Prices</Button>
                       )}
-                        <Button
-                          $variant="danger"
-                          $size="small"
-                          onClick={() => handleDeleteLocation(loc._id || loc.id, loc.name)}
-                          style={{ padding: "6px" }}
-                        >
-                          <MdDelete size={18} />
-                        </Button>
+                      <Button
+                        $variant="danger"
+                        $size="small"
+                        onClick={() => handleDeleteLocation(loc._id || loc.id, loc.name)}
+                        style={{ padding: "6px" }}
+                      >
+                        <MdDelete size={18} />
+                      </Button>
                     </div>
                   </div>
 

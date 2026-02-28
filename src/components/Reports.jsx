@@ -828,12 +828,15 @@ function Reports() {
           record.receiptNo || '',
           record.tempReceiptNo || '',
           record.gender || '',
+          (record.amountPayableBurial || 0).toLocaleString(),
+          (record.amountToPayNow || 0).toLocaleString(),
+          (record.pendingAmount || 0).toLocaleString(),
           record.status || ''
         ]);
 
         autoTable(pdf, {
           startY: 20,
-          head: [['Record No.', 'Name', 'Date of Death', 'Location', 'Receipt', 'Temp Receipt', 'Gender', 'Status']],
+          head: [['Record No.', 'Name', 'Date of Death', 'Location', 'Receipt', 'Temp Receipt', 'Gender', 'Payable', 'Paid', 'Pending', 'Status']],
           body: tableData,
           styles: {
             fontSize: 8,
@@ -889,7 +892,7 @@ function Reports() {
       // Only include specific record sheets for Detailed reports
       if (filters.reportType === 'Detailed') {
         // Records sheet - using array of arrays for better control
-        const recordsHeaders = ['Record Number', 'Full Name', 'Date of Death', 'Burial Location', 'Receipt No', 'Temp Receipt No', 'Gender', 'Age', 'Status'];
+        const recordsHeaders = ['Record Number', 'Full Name', 'Date of Death', 'Burial Location', 'Receipt No', 'Temp Receipt No', 'Gender', 'Age', 'Amount Payable', 'Amount Paid', 'Pending Amount', 'Status', 'Issuance Date'];
         const recordsRows = allRecords.map(record => [
           record.recordNumber || '',
           `${record.firstName || ''} ${record.middleName || ''} ${record.lastName || ''}`.replace(/\s+/g, ' ').trim(),
@@ -899,6 +902,9 @@ function Reports() {
           record.tempReceiptNo || '',
           record.gender || '',
           record.age || '',
+          record.amountPayableBurial || 0,
+          record.amountToPayNow || 0,
+          record.pendingAmount || 0,
           record.status || '',
           record.issuanceDate ? formatDate(record.issuanceDate) : ''
         ]);
@@ -916,6 +922,9 @@ function Reports() {
           { wch: 15 }, // Temp Receipt No
           { wch: 10 }, // Gender
           { wch: 8 },  // Age
+          { wch: 15 }, // Amount Payable
+          { wch: 15 }, // Amount Paid
+          { wch: 15 }, // Pending Amount
           { wch: 12 }, // Status
           { wch: 15 }  // Issuance Date
         ];
@@ -993,7 +1002,7 @@ function Reports() {
           csvContent += row.map(cell => `"${cell}"`).join(',') + '\n';
         });
       } else {
-        const headers = ['Record Number', 'Full Name', 'Receipt No', 'Temp Receipt No', 'Date of Death', 'Burial Location', 'Gender', 'Age', 'Status'];
+        const headers = ['Record Number', 'Full Name', 'Receipt No', 'Temp Receipt No', 'Date of Death', 'Burial Location', 'Gender', 'Age', 'Amount Payable', 'Amount Paid', 'Pending Amount', 'Status'];
         const rows = allRecords.map(record => [
           record.recordNumber,
           `${record.firstName || ''} ${record.middleName || ''} ${record.lastName || ''}`.replace(/\s+/g, ' ').trim(),
@@ -1003,6 +1012,9 @@ function Reports() {
           record.burialLocation,
           record.gender,
           record.age,
+          record.amountPayableBurial || 0,
+          record.amountToPayNow || 0,
+          record.pendingAmount || 0,
           record.status
         ]);
 
@@ -1303,6 +1315,7 @@ Status: ${record.status}
                     <th>Date of Death</th>
                     <th>Burial Location</th>
                     <th>Receipt No</th>
+                    <th>Pending Amount</th>
                     <th>Gender</th>
                     <th>Status</th>
                     <th>Actions</th>
@@ -1324,6 +1337,11 @@ Status: ${record.status}
                             </span>
                           )}
                         </div>
+                      </td>
+                      <td>
+                        <span style={{ fontWeight: 600, color: (record.pendingAmount || 0) > 0 ? theme.colors.danger : theme.colors.success }}>
+                          KES {(record.pendingAmount || 0).toLocaleString()}
+                        </span>
                       </td>
                       <td>{record.gender}</td>
                       <td><StatusBadge $status={record.status}>{record.status}</StatusBadge></td>
@@ -1383,9 +1401,7 @@ Status: ${record.status}
         </Card>
       )}
 
-      <div style={{ textAlign: 'center', padding: '24px', color: isDarkMode ? '#6d6d6d' : theme.colors.gray500, fontSize: '12px' }}>
-        © 2026 Burial Legacy Application by Islamia School & Mosque Association. All rights reserved.
-      </div>
+
 
 
     </ReportsContainer>

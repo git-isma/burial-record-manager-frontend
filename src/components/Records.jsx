@@ -451,16 +451,7 @@ const Pagination = styled.div`
   }
 `;
 
-const Footer = styled.div`
-  text-align: center;
-  padding: 24px;
-  color: ${theme.colors.gray500};
-  font-size: 12px;
 
-  body.dark-theme & {
-    color: #a0a0a0;
-  }
-`;
 
 function Records({ user }) {
   const navigate = useNavigate();
@@ -472,7 +463,7 @@ function Records({ user }) {
     burialLocation: '',
     status: '',
     gender: '',
-    dateRange: new Date().toISOString().split('T')[0]
+    dateRange: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
   });
   const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, total: 0 });
   const [loading, setLoading] = useState(false);
@@ -528,7 +519,7 @@ function Records({ user }) {
       burialLocation: '',
       status: '',
       gender: '',
-      dateRange: new Date().toISOString().split('T')[0]
+      dateRange: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
     });
     setPagination({ ...pagination, currentPage: 1 });
     setTimeout(fetchRecords, 100);
@@ -688,6 +679,7 @@ function Records({ user }) {
                     <th>Date of Death</th>
                     <th>Burial Location</th>
                     <th>Receipt No</th>
+                    <th>Pending Amount</th>
                     <th>Status</th>
                     <th>Actions</th>
                   </tr>
@@ -716,6 +708,11 @@ function Records({ user }) {
                             </span>
                           )}
                         </div>
+                      </td>
+                      <td data-label="Pending Amount">
+                        <span style={{ fontWeight: 600, color: (record.pendingAmount || 0) > 0 ? theme.colors.danger : theme.colors.success }}>
+                          KES {(record.pendingAmount || 0).toLocaleString()}
+                        </span>
                       </td>
                       <td data-label="Status">
                         <StatusBadge $status={record.status}>
@@ -759,7 +756,7 @@ function Records({ user }) {
           </>
         )}
       </RecordsCard>
-      <Footer>© 2026 Burial Legacy Application. All rights reserved.</Footer>
+
 
       {/* Bulk Delete Confirmation Modal */}
       <ConfirmModal

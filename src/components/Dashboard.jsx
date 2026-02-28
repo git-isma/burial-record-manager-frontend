@@ -855,12 +855,10 @@ Status: ${record.status}
           </div>
         )}
       </RecentUploadsSection>
-
-      <div style={{ textAlign: 'center', padding: '24px', color: isDarkMode ? '#6d6d6d' : theme.colors.gray500, fontSize: '12px' }}>
-        © 2026 Burial Legacy Application. All rights reserved.
-      </div>
     </DashboardContainer>
   );
+
+
 }
 
 export default Dashboard;
