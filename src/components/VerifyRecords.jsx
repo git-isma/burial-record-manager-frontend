@@ -170,15 +170,14 @@ const StyledTable = styled.table`
   }
 
   th { 
-    padding: 12px 16px; 
+    padding: 12px 10px; 
     text-align: left; 
     font-weight: 600; 
     color: ${theme.colors.gray700}; 
     border-bottom: 2px solid ${theme.colors.gray200}; 
-    font-size: 12px; 
+    font-size: 11px; 
     text-transform: uppercase; 
     letter-spacing: 0.5px;
-    white-space: nowrap;
 
     body.dark-theme & {
       color: #b0b0b0;
@@ -187,7 +186,7 @@ const StyledTable = styled.table`
   }
 
   td { 
-    padding: 16px;
+    padding: 12px 10px;
     color: ${theme.colors.textPrimary}; 
     border-bottom: 1px solid ${theme.colors.gray200};
     
@@ -505,7 +504,7 @@ function VerifyRecords() {
         page: pagination.currentPage, 
         limit: 10, 
         status: 'Pending',
-        endDate: new Date().toISOString().split('T')[0],
+        endDate: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
         ...filters
       };
       const res = await apiService.getPublicRecords(params);
@@ -547,7 +546,9 @@ function VerifyRecords() {
         recordId: record._id,
         recordName: `${record.firstName} ${record.lastName}`,
         recordNumber: nextRecNum,
-        receiptNo: nextReceiptNum
+        receiptNo: nextReceiptNum,
+        amountToPayNow: record.amountToPayNow,
+        pendingAmount: record.pendingAmount
       });
     } catch (err) {
       console.error('Error fetching next numbers:', err);
@@ -662,7 +663,7 @@ function VerifyRecords() {
         page: 1, 
         limit: 10, 
         status: 'Pending',
-        endDate: new Date().toISOString().split('T')[0]
+        endDate: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
       })
         .then(res => {
           if (res.data.success) {
@@ -769,26 +770,32 @@ function VerifyRecords() {
               <StyledTable>
                 <thead>
                   <tr>
-                    <th>Submitted Date</th>
                     <th>Applicant ID</th>
                     <th>Name</th>
                     <th>Date of Death</th>
                     <th>Burial Location</th>
                     <th>Submitted By</th>
+                    <th>Applicant Mobile</th>
                     <th>Receipt No</th>
+                    <th>Pending Amount</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {records.map(record => (
                     <tr key={record._id}>
-                      <td>{formatDate(record.createdAt)}</td>
                       <td>{record.applicantId || 'N/A'}</td>
                       <td>{`${record.firstName} ${record.middleName || ''} ${record.lastName}`}</td>
                       <td>{formatDate(record.dateOfDeath)}</td>
                       <td>{record.burialLocation}</td>
                       <td>{record.applicantEmail || 'N/A'}</td>
+                      <td>{record.applicantPhone || 'N/A'}</td>
                       <td>{record.tempReceiptNo || record.receiptNo}</td>
+                      <td>
+                        <span style={{ fontWeight: 600, color: (record.pendingAmount || 0) > 0 ? theme.colors.danger : theme.colors.success }}>
+                          KES {(record.pendingAmount || 0).toLocaleString()}
+                        </span>
+                      </td>
                       <td>
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <ActionButton
@@ -835,6 +842,13 @@ function VerifyRecords() {
               <p style={{ fontSize: '13px', margin: '0 0 4px 0', color: theme.colors.gray600 }}>Assignment Details:</p>
               <p style={{ margin: '0', fontWeight: '600', color: theme.colors.textPrimary }}>Record No: {verifyModal.recordNumber || 'Loading...'}</p>
               <p style={{ margin: '0', fontWeight: '600', color: theme.colors.textPrimary }}>Receipt No: {verifyModal.receiptNo || 'Loading...'}</p>
+              <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: `1px solid ${theme.colors.gray200}` }}>
+                <p style={{ margin: '0', fontSize: '13px', color: theme.colors.gray600 }}>Payment Summary:</p>
+                <p style={{ margin: '0', fontWeight: '600', color: theme.colors.textPrimary }}>Amount Paid: KES {(verifyModal.amountToPayNow || 0).toLocaleString()}</p>
+                <p style={{ margin: '0', fontWeight: '700', color: (verifyModal.pendingAmount || 0) > 0 ? theme.colors.danger : theme.colors.success }}>
+                  Pending Amount: KES {(verifyModal.pendingAmount || 0).toLocaleString()}
+                </p>
+              </div>
             </div>
           </div>
         }
@@ -1123,6 +1137,18 @@ function VerifyRecords() {
 
             <SectionTitle>Payment Information</SectionTitle>
             <ViewGrid>
+              {viewModal.record.amountToPayNow !== undefined && (
+                <ViewItem>
+                  <ViewLabel>Amount to Pay Now</ViewLabel>
+                  <ViewValue>KES {viewModal.record.amountToPayNow.toLocaleString()}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.pendingAmount !== undefined && (
+                <ViewItem>
+                  <ViewLabel>Pending Amount</ViewLabel>
+                  <ViewValue>KES {viewModal.record.pendingAmount.toLocaleString()}</ViewValue>
+                </ViewItem>
+              )}
               {viewModal.record.mpesaRefNo && (
                 <ViewItem>
                   <ViewLabel>M-Pesa Ref No</ViewLabel>

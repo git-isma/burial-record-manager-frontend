@@ -409,6 +409,8 @@ const MainContent = styled.main`
   min-height: auto;
   background: #fafafa;
   width: 100%;
+  display: flex;
+  flex-direction: column;
 
   body.dark-theme & {
     background: #1a1a1a;
@@ -537,6 +539,7 @@ const HeaderActionButton = styled.button`
 
 function Layout({ user, onLogout }) {
   const { settings, updateSettings } = useSettings();
+  const isDarkMode = settings?.theme === 'dark';
 
   const toggleTheme = () => {
     const newTheme = settings.theme === 'dark' ? 'light' : 'dark';
@@ -656,6 +659,9 @@ function Layout({ user, onLogout }) {
           <Outlet />
         </ContentArea>
         <ScrollToTop />
+        <div style={{ textAlign: 'center', padding: '24px', color: isDarkMode ? '#6d6d6d' : theme.colors.gray500, fontSize: '12px', marginTop: 'auto' }}>
+          © 2026 Islamia School & Mosque Association. All rights reserved.
+        </div>
       </MainContent>
     </LayoutContainer>
   );

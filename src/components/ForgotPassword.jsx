@@ -12,6 +12,7 @@ const Container = styled.div`
   justify-content: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 20px;
+  position: relative;
 `;
 
 const Card = styled.div`
@@ -199,6 +200,9 @@ function ForgotPassword() {
           Back to Login
         </BackLink>
       </Card>
+      <div style={{ position: 'absolute', bottom: '20px', left: 0, width: '100%', textAlign: 'center', color: 'rgba(255,255,255,0.7)', fontSize: '12px', zIndex: 10 }}>
+        © 2026 Islamia School & Mosque Association. All rights reserved.
+      </div>
     </Container>
   );
 }

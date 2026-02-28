@@ -1303,6 +1303,7 @@ Status: ${record.status}
                     <th>Date of Death</th>
                     <th>Burial Location</th>
                     <th>Receipt No</th>
+                    <th>Pending Amount</th>
                     <th>Gender</th>
                     <th>Status</th>
                     <th>Actions</th>
@@ -1324,6 +1325,11 @@ Status: ${record.status}
                             </span>
                           )}
                         </div>
+                      </td>
+                      <td>
+                        <span style={{ fontWeight: 600, color: (record.pendingAmount || 0) > 0 ? theme.colors.danger : theme.colors.success }}>
+                          KES {(record.pendingAmount || 0).toLocaleString()}
+                        </span>
                       </td>
                       <td>{record.gender}</td>
                       <td><StatusBadge $status={record.status}>{record.status}</StatusBadge></td>
@@ -1383,9 +1389,7 @@ Status: ${record.status}
         </Card>
       )}
 
-      <div style={{ textAlign: 'center', padding: '24px', color: isDarkMode ? '#6d6d6d' : theme.colors.gray500, fontSize: '12px' }}>
-        © 2026 Burial Legacy Application by Islamia School & Mosque Association. All rights reserved.
-      </div>
+
 
 
     </ReportsContainer>

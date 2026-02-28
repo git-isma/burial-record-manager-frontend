@@ -381,7 +381,7 @@ function ModernDatePicker({ value, onChange, name, placeholder = "dd - mm - yyyy
 
   const handleChange = (date) => {
     if (onChange && name) {
-      const formattedDate = date ? date.toISOString().split('T')[0] : '';
+      const formattedDate = date ? new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().split('T')[0] : '';
       onChange({
         target: {
           name: name,

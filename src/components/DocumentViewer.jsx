@@ -271,6 +271,12 @@ function DocumentViewer() {
           {record.tempReceiptNo && (
             <p style={{ fontSize: '13px', color: '#6b7280' }}>Temp: {record.tempReceiptNo}</p>
           )}
+          {record.amountToPayNow !== undefined && (
+            <p style={{ marginTop: '8px' }}>Amount Paid: KES {record.amountToPayNow.toLocaleString()}</p>
+          )}
+          {record.pendingAmount !== undefined && (
+            <p>Pending Amount: KES {record.pendingAmount.toLocaleString()}</p>
+          )}
         </InfoSection>
 
         <InfoSection>

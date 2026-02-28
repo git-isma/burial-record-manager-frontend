@@ -638,6 +638,7 @@ function DataCapture() {
     burialTime: "",
     primaryService: "Burial",
     amountPayableBurial: "",
+    amountToPayNow: "",
     secondaryService: "None",
     amountPayableSecondary: 0,
     tertiaryService: "None",
@@ -916,6 +917,7 @@ function DataCapture() {
         burialTime: record.burialTime || "",
         primaryService: record.primaryService || "Burial",
         amountPayableBurial: record.amountPayableBurial || "",
+        amountToPayNow: record.amountToPayNow !== undefined ? record.amountToPayNow : (record.amountPayableBurial || ""),
         secondaryService: record.secondaryService || "None",
         amountPayableSecondary: record.amountPayableSecondary || 0,
         tertiaryService: record.tertiaryService || "None",
@@ -976,14 +978,21 @@ function DataCapture() {
           amount = 0;
         }
       }
-      setFormData({ ...formData, [name]: value, amountPayableBurial: amount });
+      setFormData({ ...formData, [name]: value, amountPayableBurial: amount, amountToPayNow: amount });
     } else {
       setFormData({ ...formData, [name]: value });
     }
   };
 
   const handleFileChange = (e) => {
-    setFiles(Array.from(e.target.files));
+    if (e.target.files && e.target.files.length > 0) {
+      const selectedFiles = Array.from(e.target.files);
+      setFiles((prevFiles) => [...prevFiles, ...selectedFiles]);
+    }
+  };
+
+  const handleRemoveFile = (indexToRemove) => {
+    setFiles((prevFiles) => prevFiles.filter((_, index) => index !== indexToRemove));
   };
 
   // Validation functions
@@ -1034,6 +1043,14 @@ function DataCapture() {
     // Validate Mpesa ref no if provided
     if (formData.mpesaRefNo && !validateMpesaRefNo(formData.mpesaRefNo)) {
       error("M-Pesa Reference No must be exactly 10 alphanumeric characters");
+      return;
+    }
+
+    // Validate amount to pay now
+    const amountToPay = parseFloat(formData.amountToPayNow || 0);
+    const amountPayable = parseFloat(formData.amountPayableBurial || 0);
+    if (amountToPay > amountPayable) {
+      error("Amount to Pay Now cannot exceed Amount Payable for Burial");
       return;
     }
 
@@ -1141,6 +1158,7 @@ function DataCapture() {
         "idPassportNo",
         "nextOfKinIdPassport",
         "amountPayableBurial",
+        "amountToPayNow",
         "amountPayableSecondary",
         "amountPayableTertiary",
         "mpesaRefNo",
@@ -1197,6 +1215,7 @@ function DataCapture() {
           burialTime: "",
           primaryService: "Burial",
           amountPayableBurial: "",
+          amountToPayNow: "",
           secondaryService: "None",
           amountPayableSecondary: "",
           tertiaryService: "None",
@@ -1240,6 +1259,7 @@ function DataCapture() {
       burialTime: "",
       primaryService: "Burial",
       amountPayableBurial: "",
+      amountToPayNow: "",
       secondaryService: "None",
       amountPayableSecondary: "",
       tertiaryService: "None",
@@ -1882,9 +1902,39 @@ function DataCapture() {
               />
               <HelperText style={{ marginTop: "8px", alignItems: "flex-start" }}>
                 <MdInfoOutline size={16} style={{ marginRight: "6px", flexShrink: 0, marginTop: "2px" }} />
-                <span>Automatically calculated based on location and time. <strong>Please enter this amount manually upon redirection to Pesawise.</strong></span>
+                <span>Automatically calculated standard fee based on location and time.</span>
               </HelperText>
             </FormGroup>
+            <FormGroup>
+              <label htmlFor="amountToPayNow">
+                Amount to Pay Now *
+                <Tooltip
+                  content="Enter the actual amount being paid today. This defaults to the standard fee but can be lowered for committee-approved concessions or installments."
+                  position="right"
+                  multiline={true}
+                  width="400px"
+                >
+                  <InfoIcon>
+                    <MdInfoOutline size={18} />
+                  </InfoIcon>
+                </Tooltip>
+              </label>
+              <input
+                id="amountToPayNow"
+                type="number"
+                name="amountToPayNow"
+                value={formData.amountToPayNow}
+                onChange={handleChange}
+                placeholder="Enter amount to pay"
+                min="0"
+                required
+              />
+              <HelperText style={{ marginTop: "8px", alignItems: "flex-start" }}>
+                <MdInfoOutline size={16} style={{ marginRight: "6px", flexShrink: 0, marginTop: "2px" }} />
+                <span><strong>Please enter this exact amount manually</strong> upon redirection to Pesawise.</span>
+              </HelperText>
+            </FormGroup>
+
             <FormGroup>
               <div style={{ display: "flex", height: "100%", alignItems: "stretch", backgroundColor: "var(--bg-card)", padding: "16px", borderRadius: "8px", border: "1px solid var(--border-color, #e5e7eb)", boxSizing: "border-box" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1, paddingRight: "16px", justifyContent: "flex-start", alignItems: "center" }}>
@@ -2173,7 +2223,55 @@ function DataCapture() {
               />
             </FileUploadArea>
             {files.length > 0 && (
-              <FileInfo>{files.length} file(s) selected</FileInfo>
+              <ExistingAttachmentsSection style={{ marginTop: "16px", background: "transparent", border: "1px dashed var(--border-color, #cbd5e1)" }}>
+                <h4 style={{ margin: "0 0 16px 0", fontSize: "14px", fontWeight: "600", color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <MdAttachFile size={18} /> Selected Files - Ready to Upload ({files.length})
+                </h4>
+                <AttachmentsList>
+                  {files.map((file, index) => {
+                    const fileExtension = file.name.split(".").pop().toUpperCase();
+                    let fileIcon = "📄";
+                    if (fileExtension === "PDF") fileIcon = "📕";
+                    else if (["JPG", "JPEG", "PNG"].includes(fileExtension)) fileIcon = "🖼️";
+
+                    // Create an object URL for preview
+                    const fileUrl = URL.createObjectURL(file);
+
+                    return (
+                      <AttachmentItem 
+                        key={index} 
+                        href={fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => {
+                          // Allow the click to go through to open the link, but manage the URL cleanup later if needed
+                        }}
+                        style={{ cursor: "pointer" }}
+                        title={`Preview ${file.name}`}
+                      >
+                        <div className="file-icon">{fileIcon}</div>
+                        <div className="file-info">
+                          <p className="file-name" title={file.name}>{file.name}</p>
+                          <p className="file-date">{(file.size / 1024 / 1024).toFixed(2)} MB • Ready</p>
+                        </div>
+                        <button 
+                          type="button" 
+                          onClick={(e) => { 
+                            e.preventDefault(); // Prevent opening the link when clicking remove
+                            e.stopPropagation(); 
+                            handleRemoveFile(index); 
+                            URL.revokeObjectURL(fileUrl); // Clean up memory
+                          }} 
+                          style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "4px" }} 
+                          title="Remove file"
+                        >
+                          <MdCancel size={24} />
+                        </button>
+                      </AttachmentItem>
+                    );
+                  })}
+                </AttachmentsList>
+              </ExistingAttachmentsSection>
             )}
           </FormGroup>
 
