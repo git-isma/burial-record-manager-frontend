@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { PageHeader, Card, StatusBadge, Button } from '../styles/CommonStyles';
 import { theme } from '../styles/theme';
-import { MdCheckCircle, MdCancel, MdVisibility, MdDescription, MdSearch } from 'react-icons/md';
+import { MdCheckCircle, MdCancel, MdVisibility, MdDescription, MdSearch, MdEdit } from 'react-icons/md';
 import ModernDatePicker from './ModernDatePicker';
 import { ConfirmModal } from './Modal';
 import { useToast } from '../contexts/ToastContext';
@@ -467,7 +467,8 @@ function VerifyRecords() {
     burialLocation: '',
     gender: '',
     applicantEmail: '',
-    ageCategory: ''
+    ageCategory: '',
+    status: 'Pending'
   });
 
   // Modal States
@@ -503,9 +504,8 @@ function VerifyRecords() {
       const params = { 
         page: pagination.currentPage, 
         limit: 10, 
-        status: 'Pending',
+        ...filters,
         endDate: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
-        ...filters
       };
       const res = await apiService.getPublicRecords(params);
 
@@ -740,6 +740,14 @@ function VerifyRecords() {
               <option value="Adult">Adult</option>
             </select>
           </FormGroup>
+          <FormGroup>
+            <label>Status</label>
+            <select name="status" value={filters.status} onChange={handleFilterChange}>
+              <option value="Pending">Pending Verification</option>
+              <option value="Rejected">Rejected</option>
+              <option value="Verified">Verified (Public)</option>
+            </select>
+          </FormGroup>
         </FiltersGrid>
         <FilterButtons>
           <Button $variant="primary" onClick={applyFilters}>
@@ -805,6 +813,36 @@ function VerifyRecords() {
                           >
                             <MdVisibility />
                           </ActionButton>
+                          {record.status === 'Pending' && (
+                            <>
+                              <ActionButton
+                                className="verify"
+                                title="Verify Record"
+                                style={{ color: theme.colors.success }}
+                                onClick={() => handleVerifyClick(record)}
+                              >
+                                <MdCheckCircle />
+                              </ActionButton>
+                              <ActionButton
+                                className="reject"
+                                title="Reject Record"
+                                style={{ color: theme.colors.danger }}
+                                onClick={() => handleRejectClick(record)}
+                              >
+                                <MdCancel />
+                              </ActionButton>
+                            </>
+                          )}
+                          {record.status === 'Rejected' && (
+                            <ActionButton
+                              className="edit"
+                              title="Edit Rejected Record"
+                              style={{ color: theme.colors.warning }}
+                              onClick={() => navigate(`/data-capture?edit=${record._id}&type=public`)}
+                            >
+                              <MdEdit />
+                            </ActionButton>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -1020,6 +1058,15 @@ function VerifyRecords() {
                 </ViewItem>
               )}
             </ViewGrid>
+
+            {viewModal.record.status === 'Rejected' && (
+              <div style={{ marginBottom: '24px', padding: '16px', backgroundColor: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '12px' }}>
+                <SectionTitle style={{ color: '#991b1b', marginBottom: '8px', border: 'none' }}>Rejection Details</SectionTitle>
+                <div style={{ fontSize: '14px', color: '#b91c1c' }}>
+                  <strong>Reason:</strong> {viewModal.record.rejectionReason || 'No reason specified'}
+                </div>
+              </div>
+            )}
 
             <SectionTitle>Next of Kin Information</SectionTitle>
             <ViewGrid>

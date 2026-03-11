@@ -608,6 +608,7 @@ function DataCapture() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const editId = searchParams.get("edit");
+  const isPublic = searchParams.get("type") === "public";
   const { success, error } = useToast();
   const { settings } = useSettings();
 
@@ -618,6 +619,46 @@ function DataCapture() {
     const month = String(today.getMonth() + 1).padStart(2, "0");
     const day = String(today.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
+  };
+  
+  const generateNextApplicantId = (latestId) => {
+    const currentYear = new Date().getFullYear();
+
+    if (!latestId) {
+      return `APP-${currentYear}-00001`;
+    }
+
+    const parts = latestId.split("-");
+    const latestYear = parseInt(parts[1], 10);
+    const latestNumber = parseInt(parts[2], 10);
+
+    if (latestYear === currentYear) {
+      const nextNumber = latestNumber + 1;
+      return `APP-${currentYear}-${String(nextNumber).padStart(5, "0")}`;
+    } else {
+      return `APP-${currentYear}-00001`;
+    }
+  };
+
+  const refreshApplicantId = async () => {
+    try {
+      const res = await apiService.getLatestApplicantId();
+      const nextId = res.data?.applicantId || res.data?.data?.applicantId;
+
+      if (nextId) {
+        setFormData((prev) => ({ ...prev, applicantId: nextId }));
+        success("Applicant ID refreshed");
+      } else {
+        const fallbackId = generateNextApplicantId(null);
+        setFormData((prev) => ({ ...prev, applicantId: fallbackId }));
+        success("New Applicant ID generated");
+      }
+    } catch (err) {
+      console.error("Error refreshing Applicant ID:", err);
+      const fallbackId = generateNextApplicantId(null);
+      setFormData((prev) => ({ ...prev, applicantId: fallbackId }));
+      success("New Applicant ID generated");
+    }
   };
 
   const [formData, setFormData] = useState({
@@ -655,6 +696,11 @@ function DataCapture() {
     burialPermitIssuedByContact: "",
     burialPermitIssuedTo: "",
     burialPermitIssuedToContact: "",
+    applicantId: "",
+    applicantName: "",
+    applicantIdPassportNo: "",
+    applicantEmail: "",
+    applicantPhone: "",
   });
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -897,8 +943,26 @@ function DataCapture() {
 
   const fetchRecordData = async (id) => {
     try {
-      const res = await apiService.getRecord(id);
-      const record = res.data;
+      let record;
+      if (isPublic) {
+        const res = await apiService.getPublicRecord(id);
+        record = res.data.success ? res.data.data[0] : res.data[0] || res.data;
+      } else {
+        const res = await apiService.getRecord(id);
+        record = res.data;
+      }
+
+      console.log("Fetched record for edit (staff):", record);
+
+      // Normalize nationality for dropdown matching
+      let normalizedNationality = record.nationality || "";
+      const nLower = normalizedNationality.toLowerCase().trim();
+      if (nLower === "kenyan") normalizedNationality = "Kenya";
+      else if (nLower === "ugandan") normalizedNationality = "Uganda";
+      else if (nLower === "tanzanian") normalizedNationality = "Tanzania";
+      else if (nLower === "ethiopian") normalizedNationality = "Ethiopia";
+      else if (nLower === "somali") normalizedNationality = "Somalia";
+
       setFormData({
         recordNumber: record.recordNumber || "",
         firstName: record.firstName || "",
@@ -906,22 +970,22 @@ function DataCapture() {
         lastName: record.lastName || "",
         idPassportNo: record.idPassportNo || "",
         gender: record.gender || "Male",
-        age: record.age || "",
+        age: (record.age !== undefined && record.age !== null) ? record.age : (record.ageCategory === 'Stillborn' ? 0 : record.ageCategory === 'Infant' ? 1 : ""),
         ageCategory: record.ageCategory || "",
-        nationality: record.nationality || "",
+        nationality: normalizedNationality,
         dateOfDeath: record.dateOfDeath ? record.dateOfDeath.split("T")[0] : "",
         nextOfKinName: record.nextOfKinName || "",
         nextOfKinContact: record.nextOfKinContact || "",
         nextOfKinIdPassport: record.nextOfKinIdPassport || "",
-        burialLocation: record.burialLocation || "Block A",
+        burialLocation: record.burialLocation || "",
         burialTime: record.burialTime || "",
         primaryService: record.primaryService || "Burial",
-        amountPayableBurial: record.amountPayableBurial || "",
-        amountToPayNow: record.amountToPayNow !== undefined ? record.amountToPayNow : (record.amountPayableBurial || ""),
+        amountPayableBurial: (record.amountPayableBurial !== undefined && record.amountPayableBurial !== null) ? record.amountPayableBurial : "",
+        amountToPayNow: (record.amountToPayNow !== undefined && record.amountToPayNow !== null) ? record.amountToPayNow : ((record.amountPayableBurial !== undefined && record.amountPayableBurial !== null) ? record.amountPayableBurial : ""),
         secondaryService: record.secondaryService || "None",
-        amountPayableSecondary: record.amountPayableSecondary || 0,
+        amountPayableSecondary: (record.amountPayableSecondary !== undefined && record.amountPayableSecondary !== null) ? record.amountPayableSecondary : 0,
         tertiaryService: record.tertiaryService || "None",
-        amountPayableTertiary: record.amountPayableTertiary || 0,
+        amountPayableTertiary: (record.amountPayableTertiary !== undefined && record.amountPayableTertiary !== null) ? record.amountPayableTertiary : 0,
         mpesaRefNo: record.mpesaRefNo || "",
         receiptNo: record.receiptNo || "",
         status:
@@ -937,6 +1001,11 @@ function DataCapture() {
         burialPermitIssuedByContact: record.burialPermitIssuedByContact || "",
         burialPermitIssuedTo: record.burialPermitIssuedTo || "",
         burialPermitIssuedToContact: record.burialPermitIssuedToContact || "",
+        applicantId: record.applicantId || (isPublic ? generateNextApplicantId(null) : ""),
+        applicantName: record.applicantName || "",
+        applicantIdPassportNo: record.applicantIdPassportNo || "",
+        applicantEmail: record.applicantEmail || "",
+        applicantPhone: record.applicantPhone || "",
       });
 
       // Load existing attachments
@@ -1190,8 +1259,15 @@ function DataCapture() {
 
       if (editId) {
         // Update existing record
-        await apiService.updateRecord(editId, recordData);
-        success("Burial record updated successfully!");
+        if (isPublic) {
+          await apiService.updatePublicRecord(editId, recordData);
+          success("Public burial record updated successfully!");
+          navigate("/verify-records");
+        } else {
+          await apiService.updateRecord(editId, recordData);
+          success("Burial record updated successfully!");
+          navigate("/records");
+        }
       } else {
         // Create new record
         const res = await apiService.createRecord(recordData);
@@ -1279,15 +1355,25 @@ function DataCapture() {
     <div>
       <PageHeader>
         <div>
-          <h1>New Record</h1>
-          <p>Create and register a new burial record</p>
+          <h1>{editId ? (isPublic ? "Edit Public Record" : "Edit Record") : "New Record"}</h1>
+          <p>{editId ? `Update details for record ${formData.recordNumber}` : "Create and register a new burial record"}</p>
         </div>
         {editId && (
-          <Button $variant="secondary" onClick={() => navigate("/records")}>
-            <MdArrowBack size={18} /> Back to Records
+          <Button $variant="secondary" onClick={() => navigate(isPublic ? "/verify-records" : "/records")}>
+            <MdArrowBack size={18} /> Back to {isPublic ? "Verification" : "Records"}
           </Button>
         )}
       </PageHeader>
+
+      {isPublic && (
+        <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#fff7ed', border: '1px solid #ffedd5', borderRadius: '12px', display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div style={{ color: '#ea580c' }}><MdWarning size={24} /></div>
+          <div>
+            <h4 style={{ margin: '0', color: '#9a3412', fontSize: '14px' }}>Public Record Editing</h4>
+            <p style={{ margin: '4px 0 0 0', color: '#c2410c', fontSize: '13px' }}>You are currently editing a record submitted by an applicant. Changes will be saved to the pending record.</p>
+          </div>
+        </div>
+      )}
 
       <Card>
         <form onSubmit={handleSubmit}>
@@ -1337,6 +1423,97 @@ function DataCapture() {
               </div>
             </FormGroup>
           </FormGrid>
+
+          {isPublic && (
+            <>
+              <SectionTitle>
+                <span className="section-icon">
+                  <MdPerson />
+                </span>
+                Applicant Information
+              </SectionTitle>
+              <FormGrid>
+                <FormGroup>
+                  <label>Applicant ID</label>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <input
+                      type="text"
+                      value={formData.applicantId}
+                      readOnly
+                      placeholder="Auto-generated"
+                      style={{
+                        backgroundColor: "#f3f4f6",
+                        cursor: "not-allowed",
+                        color: theme.colors.primarySolid,
+                        fontWeight: "700",
+                        fontSize: "16px",
+                        flex: 1
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      onClick={refreshApplicantId}
+                      style={{
+                        padding: "10px 16px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        whiteSpace: "nowrap",
+                      }}
+                      title="Refresh Applicant ID"
+                    >
+                      <MdRefresh size={18} />
+                    </Button>
+                  </div>
+                  <p style={{ fontSize: '12px', color: theme.colors.gray500, marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <MdInfoOutline size={14} /> Auto-generated unique identifier
+                  </p>
+                </FormGroup>
+                <FormGroup>
+                  <label>Applicant Name *</label>
+                  <input
+                    name="applicantName"
+                    value={formData.applicantName}
+                    onChange={handleChange}
+                    placeholder="Enter applicant name"
+                    required
+                  />
+                </FormGroup>
+                <FormGroup>
+                  <label>ID / Passport No *</label>
+                  <input
+                    name="applicantIdPassportNo"
+                    value={formData.applicantIdPassportNo}
+                    onChange={handleChange}
+                    placeholder="Enter ID or Passport number"
+                    required
+                  />
+                </FormGroup>
+                <FormGroup>
+                  <label>Applicant Email *</label>
+                  <input
+                    type="email"
+                    name="applicantEmail"
+                    value={formData.applicantEmail}
+                    onChange={handleChange}
+                    placeholder="Enter applicant email"
+                    required
+                  />
+                </FormGroup>
+                <FormGroup>
+                  <label>Applicant Mobile No *</label>
+                  <input
+                    type="tel"
+                    name="applicantPhone"
+                    value={formData.applicantPhone}
+                    onChange={handleChange}
+                    placeholder="e.g., 0712345678"
+                    required
+                  />
+                </FormGroup>
+              </FormGrid>
+            </>
+          )}
 
           <SectionTitle>
             <span className="section-icon">
@@ -1496,8 +1673,8 @@ function DataCapture() {
                 min="0"
                 disabled={formData.ageCategory === "Stillborn"}
                 style={formData.ageCategory === "Stillborn" ? { backgroundColor: "#f3f4f6", opacity: 0.6 } : {}}
-                required
-                aria-required="true"
+                required={formData.ageCategory !== "Stillborn"}
+                aria-required={formData.ageCategory !== "Stillborn"}
               />
               {formData.ageCategory && (
                 <HelperText>
@@ -2370,11 +2547,11 @@ function DataCapture() {
             >
               {loading ? (
                 <>
-                  <InlineSpinner size="16px" thickness="2px" /> Saving...
+                  <InlineSpinner size="16px" thickness="2px" /> {editId ? "Updating..." : "Saving..."}
                 </>
               ) : (
                 <>
-                  <MdSave size={18} /> Save Record
+                  <MdSave size={18} /> {editId ? (isPublic ? "Update Public Record" : "Update Record") : "Save Record"}
                 </>
               )}
             </Button>
