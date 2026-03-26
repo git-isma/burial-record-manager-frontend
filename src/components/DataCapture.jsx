@@ -1027,9 +1027,21 @@ function DataCapture() {
       setFormData({ ...formData, [name]: value, rejectionReason: "" });
     } else if (name === "ageCategory") {
       if (value === "Infant") {
-        setFormData({ ...formData, [name]: value, age: "1" });
+        setFormData({ 
+          ...formData, 
+          [name]: value, 
+          age: "1",
+          amountPayableBurial: 4000,
+          amountToPayNow: 4000
+        });
       } else if (value === "Stillborn") {
-        setFormData({ ...formData, [name]: value, age: "0" });
+        setFormData({ 
+          ...formData, 
+          [name]: value, 
+          age: "0",
+          amountPayableBurial: 4000,
+          amountToPayNow: 4000
+        });
       } else {
         setFormData({ ...formData, [name]: value });
       }
@@ -1039,12 +1051,16 @@ function DataCapture() {
 
       let amount = formData.amountPayableBurial;
       if (locationName && time) {
-        // Find location in dynamic data
-        const loc = locationData.find(l => (typeof l === 'string' ? l === locationName : l.name === locationName));
-        if (loc && typeof loc === 'object') {
-          amount = time === "Daytime" ? (loc.daytimePrice || 0) : (loc.nighttimePrice || 0);
+        if (formData.ageCategory === "Stillborn" || formData.ageCategory === "Infant") {
+          amount = 4000;
         } else {
-          amount = 0;
+          // Find location in dynamic data
+          const loc = locationData.find(l => (typeof l === 'string' ? l === locationName : l.name === locationName));
+          if (loc && typeof loc === 'object') {
+            amount = time === "Daytime" ? (loc.daytimePrice || 0) : (loc.nighttimePrice || 0);
+          } else {
+            amount = 0;
+          }
         }
       }
       setFormData({ ...formData, [name]: value, amountPayableBurial: amount, amountToPayNow: amount });
@@ -1600,7 +1616,7 @@ function DataCapture() {
             <FormGroup>
               <label htmlFor="idPassportNo">
                 ID / Passport No
-                {(formData.ageCategory === "Child" || formData.ageCategory === "Adult")
+                {formData.ageCategory === "Adult"
                   ? " *"
                   : ""}
               </label>
@@ -1609,9 +1625,11 @@ function DataCapture() {
                 name="idPassportNo"
                 value={formData.idPassportNo}
                 onChange={handleChange}
-                placeholder="Enter ID or Passport number"
-                required={formData.ageCategory === "Child" || formData.ageCategory === "Adult"}
-                aria-required={formData.ageCategory === "Child" || formData.ageCategory === "Adult"}
+                placeholder={["Stillborn", "Infant", "Child"].includes(formData.ageCategory) ? "Not required" : "Enter ID or Passport number"}
+                disabled={["Stillborn", "Infant", "Child"].includes(formData.ageCategory)}
+                style={["Stillborn", "Infant", "Child"].includes(formData.ageCategory) ? { backgroundColor: "#f3f4f6", opacity: 0.6, cursor: "not-allowed" } : {}}
+                required={formData.ageCategory === "Adult"}
+                aria-required={formData.ageCategory === "Adult"}
               />
             </FormGroup>
             <FormGroup>
@@ -2084,7 +2102,7 @@ function DataCapture() {
             </FormGroup>
             <FormGroup>
               <label htmlFor="amountToPayNow">
-                Amount to Pay Now *
+                Actual Amount Paid *
                 <Tooltip
                   content="Enter the actual amount being paid today. This defaults to the standard fee but can be lowered for committee-approved concessions or installments."
                   position="right"
@@ -2102,9 +2120,9 @@ function DataCapture() {
                 name="amountToPayNow"
                 value={formData.amountToPayNow}
                 onChange={handleChange}
-                placeholder="Enter amount to pay"
-                min="0"
+                placeholder="Enter actual amount paid"
                 required
+                aria-required="true"
               />
               <HelperText style={{ marginTop: "8px", alignItems: "flex-start" }}>
                 <MdInfoOutline size={16} style={{ marginRight: "6px", flexShrink: 0, marginTop: "2px" }} />
