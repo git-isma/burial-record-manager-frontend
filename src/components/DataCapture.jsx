@@ -1111,6 +1111,21 @@ function DataCapture() {
         error("Date of Death cannot be in the future");
         return;
       }
+
+      // Check date of burial vs date of death
+      if (formData.dateOfBurial) {
+        const dob = new Date(formData.dateOfBurial);
+        // Compare at date level (midnight)
+        const dodOnly = new Date(dod);
+        dodOnly.setHours(0, 0, 0, 0);
+        const dobOnly = new Date(dob);
+        dobOnly.setHours(0, 0, 0, 0);
+
+        if (dobOnly < dodOnly) {
+          error("Date of Burial cannot be earlier than Date of Death");
+          return;
+        }
+      }
     }
 
     // Validate mobile number
