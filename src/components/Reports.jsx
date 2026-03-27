@@ -1060,12 +1060,14 @@ function Reports() {
         });
       } else {
         const headers = [
-          'Record Number', 'Applicant ID', 'Applicant Name', 'Applicant Email', 'Applicant Phone',
-          'First Name', 'Middle Name', 'Last Name', 'ID/Passport No', 'Gender', 'Age', 'Age Category',
+          'Record Number', 'Applicant ID', 'Applicant Name', 'Applicant Email', 'Applicant Phone', 'Applicant ID/Passport',
+          'First Name', 'Middle Name', 'Last Name', 'ID/Passport No', 'Gender', 'Age', 'Age Category', 'Nationality',
           'Date of Death', 'Date of Burial', 'Burial Location', 'Burial Time',
-          'Next of Kin Name', 'Next of Kin Contact', 'Relationship',
-          'Amount Payable (Burial)', 'Actual Amount Paid', 'Pending Amount',
-          'Receipt No', 'Temp Receipt No', 'Status'
+          'Next of Kin Name', 'Next of Kin Contact', 'Next of Kin ID/Passport', 'Next of Kin Relationship',
+          'Burial Permit No', 'Burial Permit Date', 'Burial Permit Issued By', 'Issued By Contact', 'Issued To', 'Issued To Contact',
+          'Primary Service', 'Amount Payable (Burial)', 'Actual Amount Paid', 'Pending Amount',
+          'Secondary Service', 'Secondary Amount', 'Tertiary Service', 'Tertiary Amount',
+          'M-Pesa Ref No', 'Receipt No', 'Temp Receipt No', 'Status', 'Rejection Reason', 'Issuance Date'
         ];
         const rows = allRecords.map(record => [
           record.recordNumber || '',
@@ -1073,6 +1075,7 @@ function Reports() {
           record.applicantName || '',
           record.applicantEmail || '',
           record.applicantPhone || '',
+          record.applicantIdPassportNo || '',
           record.firstName || '',
           record.middleName || '',
           record.lastName || '',
@@ -1080,19 +1083,35 @@ function Reports() {
           record.gender || '',
           record.age || '',
           record.ageCategory || '',
+          record.nationality || '',
           record.dateOfDeath ? formatDate(record.dateOfDeath) : '',
           record.dateOfBurial ? formatDate(record.dateOfBurial) : '',
           record.burialLocation || '',
           record.burialTime || '',
           record.nextOfKinName || '',
           record.nextOfKinContact || '',
+          record.nextOfKinIdPassport || '',
           record.nextOfKinRelationship || '',
+          record.burialPermitNumber || '',
+          record.burialPermitDate ? formatDate(record.burialPermitDate) : '',
+          record.burialPermitIssuedBy || '',
+          record.burialPermitIssuedByContact || '',
+          record.burialPermitIssuedTo || '',
+          record.burialPermitIssuedToContact || '',
+          record.primaryService || '',
           record.amountPayableBurial || 0,
           record.amountToPayNow || 0,
           record.pendingAmount || 0,
+          record.secondaryService || '',
+          record.amountPayableSecondary || 0,
+          record.tertiaryService || '',
+          record.amountPayableTertiary || 0,
+          record.mpesaRefNo || '',
           record.receiptNo || '',
           record.tempReceiptNo || '',
-          record.status || ''
+          record.status || '',
+          record.rejectionReason || '',
+          record.verifiedAt ? formatDate(record.verifiedAt) : (record.createdAt ? formatDate(record.createdAt) : '')
         ]);
 
         csvContent = headers.join(',') + '\n';
