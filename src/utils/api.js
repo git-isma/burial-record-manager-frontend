@@ -46,6 +46,7 @@ export const API_ENDPOINTS = {
         DELETE: (id) => `/records/${id}`,
         BULK_DELETE: '/records',
         VERIFY: (id) => `/records/verify-public/${id}`,
+        UPDATE_PUBLIC_RECORD: (id) => `/records/public-record/${id}`,
         LATEST_NUMBER: '/records/latest-record-number',
         LATEST_RECEIPT_NUMBER: '/records/latest-receipt-number',
     },
@@ -140,8 +141,9 @@ export const apiService = {
     getPublicRecords: (params) => axios.get(API_ENDPOINTS.PUBLIC_RECORDS.LIST, { params }),
     getPublicRecord: (id) => axios.get(API_ENDPOINTS.PUBLIC_RECORDS.LIST, { params: { id } }),
     verifyPublicRecord: (id, data) => axios.put(API_ENDPOINTS.RECORDS.VERIFY(id), data),
+    updatePublicRecord: (id, data) => axios.put(API_ENDPOINTS.RECORDS.UPDATE_PUBLIC_RECORD(id), data),
     getLatestApplicantId: () => axios.get(API_ENDPOINTS.PUBLIC_RECORDS.LATEST_APPLICANT_ID),
-    
+
     // Notifications
     getNotifications: (unreadOnly = false) => axios.get(API_ENDPOINTS.NOTIFICATIONS.LIST, { params: { unreadOnly } }),
     markNotificationAsRead: (id) => axios.put(API_ENDPOINTS.NOTIFICATIONS.MARK_READ(id)),

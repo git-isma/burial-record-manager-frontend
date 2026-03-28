@@ -297,7 +297,7 @@ export const ConfirmModal = ({
       }
     >
       <div style={{ textAlign: 'center', padding: '20px 0' }}>
-        <ConfirmIcon $variant={variant}>{icon}</ConfirmIcon>
+        {icon && <ConfirmIcon $variant={variant}>{icon}</ConfirmIcon>}
         <ConfirmMessage>{message}</ConfirmMessage>
       </div>
     </Modal>

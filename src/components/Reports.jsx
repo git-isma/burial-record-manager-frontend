@@ -586,11 +586,12 @@ function Reports() {
   const [filters, setFilters] = useState({
     reportType: 'Summary',
     dateRange: 'all',
-    ageGroup: '',
+    ageCategory: '',
     gender: '',
     burialLocation: ''
   });
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50); // Increased default for reports
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -600,11 +601,27 @@ function Reports() {
   useEffect(() => {
     fetchStats();
     fetchFilteredRecords();
+    fetchLocations();
   }, []);
 
   useEffect(() => {
     fetchFilteredRecords();
-  }, [currentPage, filters]);
+  }, [currentPage, pageSize, filters]);
+
+  const [locations, setLocations] = useState([]);
+
+  const fetchLocations = async () => {
+    try {
+      const res = await apiService.getLocations();
+      if (Array.isArray(res.data)) {
+        setLocations(res.data);
+      } else if (res.data.success) {
+        setLocations(res.data.data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching locations:', err);
+    }
+  };
 
   const fetchStats = async () => {
     try {
@@ -668,8 +685,9 @@ function Reports() {
       const { startDate, endDate } = getDateRange();
       const params = {
         page: currentPage,
-        limit: 10,
+        limit: pageSize,
         ...(filters.gender && { gender: filters.gender }),
+        ...(filters.ageCategory && { ageCategory: filters.ageCategory }),
         ...(filters.burialLocation && { burialLocation: filters.burialLocation }),
         ...(startDate && { startDate: startDate.toISOString() }),
         ...(endDate && { endDate: endDate.toISOString() })
@@ -683,8 +701,10 @@ function Reports() {
 
       // Fetch all records for export (without pagination)
       const allParams = {
-        limit: 10000,
+        limit: 15000, // Increased limit for large queries
+        page: 1,
         ...(filters.gender && { gender: filters.gender }),
+        ...(filters.ageCategory && { ageCategory: filters.ageCategory }),
         ...(filters.burialLocation && { burialLocation: filters.burialLocation }),
         ...(startDate && { startDate: startDate.toISOString() }),
         ...(endDate && { endDate: endDate.toISOString() })
@@ -712,153 +732,186 @@ function Reports() {
 
       showToast('Generating PDF... Please wait', 'info');
 
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      // --- BRAND DESIGN SYSTEM ---
+      const BRAND = {
+        primary: [30, 64, 175], // #1e40af
+        secondary: [243, 244, 246], // #f3f4f6
+        accent: [37, 99, 235],
+        text: [31, 41, 55],
+        subtext: [107, 114, 128],
+        white: [255, 255, 255],
+        border: [209, 213, 219]
+      };
+
+      // Starting document in Landscape as requested
+      const pdf = new jsPDF({ orientation: 'l', unit: 'mm', format: 'a4' });
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      let yPosition = 10;
+      const margin = 15;
+      const headerMaxY = 62;
 
-      // --- HEADER ---
-      pdf.setFillColor(30, 64, 175); // theme.colors.primary (#1e40af)
-      pdf.rect(0, 0, pageWidth, 48, 'F');
+      // --- HELPER: BRAND HEADER (Center Aligned) ---
+      const addHeader = (doc) => {
+        const width = doc.internal.pageSize.getWidth();
+        const centerX = width / 2;
+        
+        // Top Accent Line
+        doc.setFillColor(...BRAND.primary);
+        doc.rect(0, 0, width, 4, 'F');
 
-      try {
-        // Logo with white background for contrast
-        pdf.setFillColor(255, 255, 255);
-        pdf.roundedRect(12, 6, 28, 28, 1, 1, 'F');
-        pdf.addImage(ismaLogo, 'PNG', 13, 7, 26, 26);
-      } catch (logoErr) {
-        console.warn('Could not add logo to PDF:', logoErr);
-      }
+        // Branding Row (Logo Centered)
+        try {
+          doc.addImage(ismaLogo, 'PNG', centerX - 12, 8, 24, 24);
+        } catch (e) {}
 
-      const centerX = (pageWidth + 30) / 2;
+        doc.setTextColor(...BRAND.primary);
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Islamia School & Mosque Association', centerX, 40, { align: 'center' });
+        
+        doc.setFontSize(9);
+        doc.setTextColor(...BRAND.subtext);
+        doc.setFont('helvetica', 'normal');
+        doc.text('CUSTODIANS OF THE SUNNI MUSMUSLIM CEMETERIES - KARIOKOR & LANGATA', centerX, 45, { align: 'center' });
+        
+        doc.setFontSize(7.5);
+        doc.text('P.O. Box 21015 - 00500 NAIROBI | Cell: +254 113217749 | Email: office@isma.co.ke', centerX, 49, { align: 'center' });
+        
+        // Professional Divider
+        doc.setDrawColor(...BRAND.primary);
+        doc.setLineWidth(0.3);
+        doc.line(margin, 54, width - margin, 54);
+        
+        // Detailed Info Bar (Subheader)
+        doc.setFillColor(...BRAND.secondary);
+        doc.rect(margin, 57, width - margin * 2, 10, 'F');
+        
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...BRAND.primary);
+        const reportTitle = `${filters.reportType.toUpperCase()} BURIAL RECORD REPORT`;
+        doc.text(reportTitle, centerX, 63.5, { align: 'center' });
+        
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...BRAND.subtext);
+        doc.text(`Generated: ${formatDate(new Date())} | Records: ${allRecords.length} | Page ${doc.internal.getCurrentPageInfo().pageNumber}`, width - margin - 2, 63.5, { align: 'right' });
+      };
 
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(18);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Islamia School & Mosque Association', centerX, 15, { align: 'center' });
+      const finalHeaderY = 72; // Increased to accommodate centered logo
 
-      pdf.setFontSize(9);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(240, 240, 255);
-      pdf.text('CUSTODIANS OF THE SUNNI MUSLIM CEMETERIES - KARIOKOR & LANGATA', centerX, 21, { align: 'center' });
+      // --- HELPER: BRAND FOOTER ---
+      const addFooter = (doc) => {
+        const width = doc.internal.pageSize.getWidth();
+        const height = doc.internal.pageSize.getHeight();
+        doc.setFontSize(7.5);
+        doc.setTextColor(...BRAND.subtext);
+        doc.setDrawColor(...BRAND.border);
+        doc.line(margin, height - 12, width - margin, height - 12);
+        doc.text('System Certified Document - Islamia School & Mosque Association', margin, height - 8);
+        doc.text(`Internal Classification: Administrative Report`, width - margin, height - 8, { align: 'right' });
+      };
 
-      pdf.setFontSize(8);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(220, 220, 255);
-      pdf.text('P.O. Box 21015 - 00500 NAIROBI | Cell / Whatsapp: +254 113217749 | Email: office@isma.co.ke', centerX, 26, { align: 'center' });
+      // --- PAGE 1: SUMMARY (Landscape) ---
+      addHeader(pdf);
+      let y = finalHeaderY + 5;
 
-      // Separator line
-      pdf.setDrawColor(255, 255, 255);
-      pdf.setLineWidth(0.2);
-      pdf.line(42, 29, pageWidth - 15, 29);
-
-      // Report Details (White text over blue)
-      pdf.setFontSize(13);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(255, 255, 255);
-      pdf.text(`${filters.reportType.toUpperCase()} BURIAL RECORD REPORT`, centerX, 37, { align: 'center' });
-
-      pdf.setFontSize(8);
-      pdf.setTextColor(230, 230, 255);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(`Generated on: ${formatDate(new Date())}`, centerX, 42, { align: 'center' });
-
-      yPosition = 60;
-
-      // Capture Stats Grid
+      // Stats Section
       const statsGrid = document.getElementById('stats-grid-pdf');
       if (statsGrid) {
-        const canvas = await html2canvas(statsGrid, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#ffffff'
-        });
-        const imgData = canvas.toDataURL('image/png');
-        const imgWidth = pageWidth - 20;
+        pdf.setFontSize(10.5);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(...BRAND.primary);
+        pdf.text('1.0 CONSOLIDATED RECORD STATISTICS', margin, y);
+        y += 6;
+
+        const canvas = await html2canvas(statsGrid, { scale: 2, useCORS: true });
+        const imgWidth = pageWidth - margin * 2;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-        if (yPosition + imgHeight > pageHeight - 10) {
-          pdf.addPage();
-          yPosition = 10;
-        }
-
-        pdf.addImage(imgData, 'PNG', 10, yPosition, imgWidth, imgHeight);
-        yPosition += imgHeight + 10;
+        
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, y, imgWidth, imgHeight);
+        y += imgHeight + 12;
       }
 
-      // Capture Charts Grid
+      // Charts Section
       const chartsGrid = document.getElementById('charts-grid-pdf');
       if (chartsGrid) {
-        if (yPosition + 80 > pageHeight - 10) {
+        if (y + 110 > pageHeight - 20) {
           pdf.addPage();
-          yPosition = 10;
+          addHeader(pdf);
+          y = finalHeaderY + 5;
         }
 
-        const canvas = await html2canvas(chartsGrid, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#ffffff'
-        });
-        const imgData = canvas.toDataURL('image/png');
-        const imgWidth = pageWidth - 20;
+        pdf.setFontSize(10.5);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(...BRAND.primary);
+        pdf.text('2.0 ANALYTICAL TRENDS & DISTRIBUTIONS', margin, y);
+        y += 6;
+
+        const canvas = await html2canvas(chartsGrid, { scale: 2, useCORS: true });
+        const imgWidth = pageWidth - margin * 2;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-        if (yPosition + imgHeight > pageHeight - 10) {
-          pdf.addPage();
-          yPosition = 10;
-        }
-
-        pdf.addImage(imgData, 'PNG', 10, yPosition, imgWidth, imgHeight);
-        yPosition += imgHeight + 10;
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, y, imgWidth, imgHeight);
       }
 
+      // --- DETAILED RECORDS TABLE ---
       if (filters.reportType === 'Detailed') {
-        pdf.addPage();
-        pdf.setFontSize(14);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Filtered Records', 10, 15);
+        pdf.addPage(); // Already landscape by default now
+        addHeader(pdf);
 
-        const tableData = allRecords.map(record => [
-          record.recordNumber || '',
-          `${record.firstName || ''} ${record.middleName || ''} ${record.lastName || ''}`.replace(/\s+/g, ' ').trim(),
-          record.dateOfDeath ? formatDate(record.dateOfDeath) : '',
-          record.burialLocation || '',
-          record.receiptNo || '',
-          record.tempReceiptNo || '',
-          record.gender || '',
-          (record.amountPayableBurial || 0).toLocaleString(),
-          (record.amountToPayNow || 0).toLocaleString(),
-          (record.pendingAmount || 0).toLocaleString(),
-          record.status || ''
+        const detailedHeaders = [
+          'Record Index', 'Deceased Information', 'Burial Logistics', 
+          'Applicant Details', 'Billing & Permits', 
+          'Financial Services', 'Process Status'
+        ];
+
+        const detailedTableData = allRecords.map(record => [
+          `Record No: ${record.recordNumber || '-'}\nApp ID: ${record.applicantId || '-'}\nIssuance: ${record.verifiedAt ? formatDate(record.verifiedAt) : '-'}\nCategory: ${record.ageCategory || '-'}`,
+          `Full Name: ${[record.firstName, record.middleName, record.lastName].filter(Boolean).join(' ').trim()}\nID/Passport: ${record.idPassportNo || '-'}\nGender: ${record.gender || '-'}\nNationality: ${record.nationality || '-'}`,
+          `Date of Death: ${record.dateOfDeath ? formatDate(record.dateOfDeath) : '-'}\nDate of Burial: ${record.dateOfBurial ? formatDate(record.dateOfBurial) : '-'}\nLocation: ${record.burialLocation || '-'}\nTime: ${record.burialTime || '-'}`,
+          `Applicant: ${record.applicantName || '-'}\nPhone No: ${record.applicantPhone || '-'}\nEmail: ${record.applicantEmail || '-'}\nNext of Kin: ${record.nextOfKinName || '-'}\nRelation: ${record.nextOfKinRelationship || '-'}`,
+          `Permit No: ${record.burialPermitNumber || '-'}\nM-Pesa Ref: ${record.mpesaRefNo || '-'}\nReceipt No: ${record.receiptNo || '-'}\nTemp Receipt: ${record.tempReceiptNo || '-'}`,
+          `Burial Charge: ${ (record.amountPayableBurial || 0).toLocaleString() }\nAmount Paid: ${ (record.amountToPayNow || 0).toLocaleString() }\nBalance Due: ${ (record.pendingAmount || 0).toLocaleString() }\nSecondary: ${record.secondaryService || 'None'}`,
+          `${record.status || 'Pending'}${record.rejectionReason ? '\n' + record.rejectionReason : ''}`
         ]);
 
         autoTable(pdf, {
-          startY: 20,
-          head: [['Record No.', 'Name', 'Date of Death', 'Location', 'Receipt', 'Temp Receipt', 'Gender', 'Payable', 'Paid', 'Pending', 'Status']],
-          body: tableData,
-          styles: {
-            fontSize: 8,
-            cellPadding: 2
+          startY: finalHeaderY + 2,
+          head: [detailedHeaders],
+          body: detailedTableData,
+          theme: 'grid',
+          styles: { fontSize: 7, cellPadding: 3, overflow: 'linebreak', font: 'helvetica' },
+          headStyles: { fillColor: BRAND.primary, textColor: BRAND.white, fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [252, 253, 255] },
+          columnStyles: {
+            0: { cellWidth: 35 }, 1: { cellWidth: 48 }, 2: { cellWidth: 42 },
+            3: { cellWidth: 48 }, 4: { cellWidth: 42 }, 5: { cellWidth: 35 }, 6: { cellWidth: 25 }
           },
-          headStyles: {
-            fillColor: [124, 58, 237],
-            fontStyle: 'bold',
-            halign: 'left'
+          margin: { top: finalHeaderY, left: margin, right: margin, bottom: 20 },
+          didDrawPage: (data) => {
+            if (data.pageNumber > 1) {
+              addHeader(pdf);
+            }
           },
-          alternateRowStyles: {
-            fillColor: [245, 245, 245]
-          },
-          margin: { left: 10, right: 10 }
+          didDrawCell: (data) => {
+            if (data.column.index === 6 && data.section === 'body') {
+              const statusLine = data.cell.raw.split('\n')[0];
+              if (statusLine === 'Verified') pdf.setTextColor(16, 120, 100);
+              else if (statusLine === 'Rejected') pdf.setTextColor(180, 0, 0);
+              else if (statusLine === 'Pending') pdf.setTextColor(180, 120, 0);
+              pdf.setFont('helvetica', 'bold');
+            }
+          }
         });
       }
 
-      pdf.save(`${filters.reportType.toLowerCase()}-burial-report-${new Date().toISOString().split('T')[0]}.pdf`);
-      showToast(`PDF exported successfully with ${allRecords.length} records`, 'success');
+      addFooter(pdf);
+      pdf.save(`${filters.reportType.toLowerCase()}-burial-report-${new Date().getTime()}.pdf`);
+      showToast('Landscape PDF report generated successfully', 'success');
+
     } catch (err) {
-      console.error('PDF export error:', err);
-      showToast(`Error exporting PDF: ${err.message}`, 'error');
+      console.error('PDF Landscape enhancement error:', err);
+      showToast('Error generating Landscape PDF: ' + err.message, 'error');
     }
   };
 
@@ -892,42 +945,66 @@ function Reports() {
       // Only include specific record sheets for Detailed reports
       if (filters.reportType === 'Detailed') {
         // Records sheet - using array of arrays for better control
-        const recordsHeaders = ['Record Number', 'Full Name', 'Date of Death', 'Burial Location', 'Receipt No', 'Temp Receipt No', 'Gender', 'Age', 'Amount Payable', 'Amount Paid', 'Pending Amount', 'Status', 'Issuance Date'];
+        const recordsHeaders = [
+          'Record Number', 'Applicant ID', 'Applicant Name', 'Applicant Email', 'Applicant Phone', 'Applicant ID/Passport',
+          'First Name', 'Middle Name', 'Last Name', 'ID/Passport No', 'Gender', 'Age', 'Age Category', 'Nationality',
+          'Date of Death', 'Date of Burial', 'Burial Location', 'Burial Time',
+          'Next of Kin Name', 'Next of Kin Contact', 'Next of Kin ID/Passport', 'Relationship',
+          'Burial Permit No', 'Burial Permit Date', 'Burial Permit Issued By', 'Issued By Contact', 'Issued To', 'Issued To Contact',
+          'Primary Service', 'Amount Payable (Burial)', 'Actual Amount Paid', 'Pending Amount',
+          'Secondary Service', 'Secondary Amount', 'Tertiary Service', 'Tertiary Amount',
+          'M-Pesa Ref No', 'Receipt No', 'Temp Receipt No', 'Status', 'Rejection Reason', 'Issuance Date'
+        ];
         const recordsRows = allRecords.map(record => [
           record.recordNumber || '',
-          `${record.firstName || ''} ${record.middleName || ''} ${record.lastName || ''}`.replace(/\s+/g, ' ').trim(),
-          record.dateOfDeath ? formatDate(record.dateOfDeath) : '',
-          record.burialLocation || '',
-          record.receiptNo || '',
-          record.tempReceiptNo || '',
+          record.applicantId || '',
+          record.applicantName || '',
+          record.applicantEmail || '',
+          record.applicantPhone || '',
+          record.applicantIdPassportNo || '',
+          record.firstName || '',
+          record.middleName || '',
+          record.lastName || '',
+          record.idPassportNo || '',
           record.gender || '',
           record.age || '',
+          record.ageCategory || '',
+          record.nationality || '',
+          record.dateOfDeath ? formatDate(record.dateOfDeath) : '',
+          record.dateOfBurial ? formatDate(record.dateOfBurial) : '',
+          record.burialLocation || '',
+          record.burialTime || '',
+          record.nextOfKinName || '',
+          record.nextOfKinContact || '',
+          record.nextOfKinIdPassport || '',
+          record.nextOfKinRelationship || '',
+          record.burialPermitNumber || '',
+          record.burialPermitDate ? formatDate(record.burialPermitDate) : '',
+          record.burialPermitIssuedBy || '',
+          record.burialPermitIssuedByContact || '',
+          record.burialPermitIssuedTo || '',
+          record.burialPermitIssuedToContact || '',
+          record.primaryService || '',
           record.amountPayableBurial || 0,
           record.amountToPayNow || 0,
           record.pendingAmount || 0,
+          record.secondaryService || '',
+          record.amountPayableSecondary || 0,
+          record.tertiaryService || '',
+          record.amountPayableTertiary || 0,
+          record.mpesaRefNo || '',
+          record.receiptNo || '',
+          record.tempReceiptNo || '',
           record.status || '',
-          record.issuanceDate ? formatDate(record.issuanceDate) : ''
+          record.rejectionReason || '',
+          record.verifiedAt ? formatDate(record.verifiedAt) : (record.createdAt ? formatDate(record.createdAt) : '')
         ]);
 
         const recordsData = [recordsHeaders, ...recordsRows];
         const recordsSheet = XLSX.utils.aoa_to_sheet(recordsData);
 
         // Set column widths
-        recordsSheet['!cols'] = [
-          { wch: 15 }, // Record Number
-          { wch: 25 }, // Full Name
-          { wch: 15 }, // Date of Death
-          { wch: 20 }, // Burial Location
-          { wch: 15 }, // Receipt No
-          { wch: 15 }, // Temp Receipt No
-          { wch: 10 }, // Gender
-          { wch: 8 },  // Age
-          { wch: 15 }, // Amount Payable
-          { wch: 15 }, // Amount Paid
-          { wch: 15 }, // Pending Amount
-          { wch: 12 }, // Status
-          { wch: 15 }  // Issuance Date
-        ];
+        recordsSheet['!cols'] = recordsHeaders.map(() => ({ wch: 20 }));
 
         XLSX.utils.book_append_sheet(wb, recordsSheet, 'All Records');
 
@@ -1002,20 +1079,59 @@ function Reports() {
           csvContent += row.map(cell => `"${cell}"`).join(',') + '\n';
         });
       } else {
-        const headers = ['Record Number', 'Full Name', 'Receipt No', 'Temp Receipt No', 'Date of Death', 'Burial Location', 'Gender', 'Age', 'Amount Payable', 'Amount Paid', 'Pending Amount', 'Status'];
+        const headers = [
+          'Record Number', 'Applicant ID', 'Applicant Name', 'Applicant Email', 'Applicant Phone', 'Applicant ID/Passport',
+          'First Name', 'Middle Name', 'Last Name', 'ID/Passport No', 'Gender', 'Age', 'Age Category', 'Nationality',
+          'Date of Death', 'Date of Burial', 'Burial Location', 'Burial Time',
+          'Next of Kin Name', 'Next of Kin Contact', 'Next of Kin ID/Passport', 'Next of Kin Relationship',
+          'Burial Permit No', 'Burial Permit Date', 'Burial Permit Issued By', 'Issued By Contact', 'Issued To', 'Issued To Contact',
+          'Primary Service', 'Amount Payable (Burial)', 'Actual Amount Paid', 'Pending Amount',
+          'Secondary Service', 'Secondary Amount', 'Tertiary Service', 'Tertiary Amount',
+          'M-Pesa Ref No', 'Receipt No', 'Temp Receipt No', 'Status', 'Rejection Reason', 'Issuance Date'
+        ];
         const rows = allRecords.map(record => [
-          record.recordNumber,
-          `${record.firstName || ''} ${record.middleName || ''} ${record.lastName || ''}`.replace(/\s+/g, ' ').trim(),
-          record.receiptNo || '',
-          record.tempReceiptNo || '',
-          formatDate(record.dateOfDeath),
-          record.burialLocation,
-          record.gender,
-          record.age,
+          record.recordNumber || '',
+          record.applicantId || '',
+          record.applicantName || '',
+          record.applicantEmail || '',
+          record.applicantPhone || '',
+          record.applicantIdPassportNo || '',
+          record.firstName || '',
+          record.middleName || '',
+          record.lastName || '',
+          record.idPassportNo || '',
+          record.gender || '',
+          record.age || '',
+          record.ageCategory || '',
+          record.nationality || '',
+          record.dateOfDeath ? formatDate(record.dateOfDeath) : '',
+          record.dateOfBurial ? formatDate(record.dateOfBurial) : '',
+          record.burialLocation || '',
+          record.burialTime || '',
+          record.nextOfKinName || '',
+          record.nextOfKinContact || '',
+          record.nextOfKinIdPassport || '',
+          record.nextOfKinRelationship || '',
+          record.burialPermitNumber || '',
+          record.burialPermitDate ? formatDate(record.burialPermitDate) : '',
+          record.burialPermitIssuedBy || '',
+          record.burialPermitIssuedByContact || '',
+          record.burialPermitIssuedTo || '',
+          record.burialPermitIssuedToContact || '',
+          record.primaryService || '',
           record.amountPayableBurial || 0,
           record.amountToPayNow || 0,
           record.pendingAmount || 0,
-          record.status
+          record.secondaryService || '',
+          record.amountPayableSecondary || 0,
+          record.tertiaryService || '',
+          record.amountPayableTertiary || 0,
+          record.mpesaRefNo || '',
+          record.receiptNo || '',
+          record.tempReceiptNo || '',
+          record.status || '',
+          record.rejectionReason || '',
+          record.verifiedAt ? formatDate(record.verifiedAt) : (record.createdAt ? formatDate(record.createdAt) : '')
         ]);
 
         csvContent = headers.join(',') + '\n';
@@ -1128,13 +1244,13 @@ Status: ${record.status}
             </select>
           </FormGroup>
           <FormGroup>
-            <label>Age Group</label>
-            <select value={filters.ageGroup} onChange={(e) => setFilters({ ...filters, ageGroup: e.target.value })}>
-              <option value="">All</option>
-              <option value="0-18">0-18</option>
-              <option value="19-35">19-35</option>
-              <option value="36-60">36-60</option>
-              <option value="60+">60+</option>
+            <label>Age Category</label>
+            <select value={filters.ageCategory} onChange={(e) => setFilters({ ...filters, ageCategory: e.target.value })}>
+              <option value="">All Categories</option>
+              <option value="Stillborn">Stillborn</option>
+              <option value="Infant">Infant</option>
+              <option value="Child">Child</option>
+              <option value="Adult">Adult</option>
             </select>
           </FormGroup>
           <FormGroup>
@@ -1148,11 +1264,10 @@ Status: ${record.status}
           <FormGroup>
             <label>Burial Location</label>
             <select value={filters.burialLocation} onChange={(e) => setFilters({ ...filters, burialLocation: e.target.value })}>
-              <option value="">All</option>
-              <option value="Block A">Block A</option>
-              <option value="Main">Main</option>
-              <option value="Block B">Block B</option>
-              <option value="Lan'gata">Lan'gata</option>
+              <option value="">All Locations</option>
+              {locations.map(loc => (
+                <option key={loc._id} value={loc.name}>{loc.name}</option>
+              ))}
             </select>
           </FormGroup>
         </FiltersGrid>
@@ -1299,8 +1414,37 @@ Status: ${record.status}
 
       {filters.reportType === 'Detailed' ? (
         <Card>
-          <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 4px 0', color: isDarkMode ? '#e5e5e5' : theme.colors.gray900 }}>Filtered Records</h3>
-          <p style={{ fontSize: '13px', color: isDarkMode ? '#a0a0a0' : theme.colors.gray500, margin: '0 0 20px 0' }}>Overview of burial records matching current report filters</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 4px 0', color: isDarkMode ? '#e5e5e5' : theme.colors.gray900 }}>Filtered Records</h3>
+              <p style={{ fontSize: '13px', color: isDarkMode ? '#a0a0a0' : theme.colors.gray500, margin: 0 }}>Overview of burial records matching current report filters</p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '12px', color: isDarkMode ? '#aaa' : '#666', fontWeight: 500 }}>Rows per page:</span>
+              <select 
+                value={pageSize} 
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                style={{
+                  padding: '6px 10px',
+                  borderRadius: '6px',
+                  border: `1px solid ${isDarkMode ? '#333' : '#ddd'}`,
+                  background: isDarkMode ? '#1f1f1f' : 'white',
+                  color: isDarkMode ? 'white' : 'black',
+                  fontSize: '12px',
+                  fontWeight: 600
+                }}
+              >
+                <option value={10}>10</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={200}>200</option>
+                <option value={500}>500</option>
+              </select>
+            </div>
+          </div>
           {loading ? (
             <div style={{ textAlign: 'center', padding: '40px', color: isDarkMode ? '#a0a0a0' : theme.colors.gray500 }}>
               Loading records...
