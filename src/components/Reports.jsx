@@ -586,11 +586,12 @@ function Reports() {
   const [filters, setFilters] = useState({
     reportType: 'Summary',
     dateRange: 'all',
-    ageGroup: '',
+    ageCategory: '',
     gender: '',
     burialLocation: ''
   });
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50); // Increased default for reports
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -600,11 +601,27 @@ function Reports() {
   useEffect(() => {
     fetchStats();
     fetchFilteredRecords();
+    fetchLocations();
   }, []);
 
   useEffect(() => {
     fetchFilteredRecords();
-  }, [currentPage, filters]);
+  }, [currentPage, pageSize, filters]);
+
+  const [locations, setLocations] = useState([]);
+
+  const fetchLocations = async () => {
+    try {
+      const res = await apiService.getLocations();
+      if (Array.isArray(res.data)) {
+        setLocations(res.data);
+      } else if (res.data.success) {
+        setLocations(res.data.data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching locations:', err);
+    }
+  };
 
   const fetchStats = async () => {
     try {
@@ -668,8 +685,9 @@ function Reports() {
       const { startDate, endDate } = getDateRange();
       const params = {
         page: currentPage,
-        limit: 10,
+        limit: pageSize,
         ...(filters.gender && { gender: filters.gender }),
+        ...(filters.ageCategory && { ageCategory: filters.ageCategory }),
         ...(filters.burialLocation && { burialLocation: filters.burialLocation }),
         ...(startDate && { startDate: startDate.toISOString() }),
         ...(endDate && { endDate: endDate.toISOString() })
@@ -683,8 +701,10 @@ function Reports() {
 
       // Fetch all records for export (without pagination)
       const allParams = {
-        limit: 10000,
+        limit: 15000, // Increased limit for large queries
+        page: 1,
         ...(filters.gender && { gender: filters.gender }),
+        ...(filters.ageCategory && { ageCategory: filters.ageCategory }),
         ...(filters.burialLocation && { burialLocation: filters.burialLocation }),
         ...(startDate && { startDate: startDate.toISOString() }),
         ...(endDate && { endDate: endDate.toISOString() })
@@ -1224,13 +1244,13 @@ Status: ${record.status}
             </select>
           </FormGroup>
           <FormGroup>
-            <label>Age Group</label>
-            <select value={filters.ageGroup} onChange={(e) => setFilters({ ...filters, ageGroup: e.target.value })}>
-              <option value="">All</option>
-              <option value="0-18">0-18</option>
-              <option value="19-35">19-35</option>
-              <option value="36-60">36-60</option>
-              <option value="60+">60+</option>
+            <label>Age Category</label>
+            <select value={filters.ageCategory} onChange={(e) => setFilters({ ...filters, ageCategory: e.target.value })}>
+              <option value="">All Categories</option>
+              <option value="Stillborn">Stillborn</option>
+              <option value="Infant">Infant</option>
+              <option value="Child">Child</option>
+              <option value="Adult">Adult</option>
             </select>
           </FormGroup>
           <FormGroup>
@@ -1244,11 +1264,10 @@ Status: ${record.status}
           <FormGroup>
             <label>Burial Location</label>
             <select value={filters.burialLocation} onChange={(e) => setFilters({ ...filters, burialLocation: e.target.value })}>
-              <option value="">All</option>
-              <option value="Block A">Block A</option>
-              <option value="Main">Main</option>
-              <option value="Block B">Block B</option>
-              <option value="Lan'gata">Lan'gata</option>
+              <option value="">All Locations</option>
+              {locations.map(loc => (
+                <option key={loc._id} value={loc.name}>{loc.name}</option>
+              ))}
             </select>
           </FormGroup>
         </FiltersGrid>
@@ -1395,8 +1414,37 @@ Status: ${record.status}
 
       {filters.reportType === 'Detailed' ? (
         <Card>
-          <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 4px 0', color: isDarkMode ? '#e5e5e5' : theme.colors.gray900 }}>Filtered Records</h3>
-          <p style={{ fontSize: '13px', color: isDarkMode ? '#a0a0a0' : theme.colors.gray500, margin: '0 0 20px 0' }}>Overview of burial records matching current report filters</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 4px 0', color: isDarkMode ? '#e5e5e5' : theme.colors.gray900 }}>Filtered Records</h3>
+              <p style={{ fontSize: '13px', color: isDarkMode ? '#a0a0a0' : theme.colors.gray500, margin: 0 }}>Overview of burial records matching current report filters</p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '12px', color: isDarkMode ? '#aaa' : '#666', fontWeight: 500 }}>Rows per page:</span>
+              <select 
+                value={pageSize} 
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                style={{
+                  padding: '6px 10px',
+                  borderRadius: '6px',
+                  border: `1px solid ${isDarkMode ? '#333' : '#ddd'}`,
+                  background: isDarkMode ? '#1f1f1f' : 'white',
+                  color: isDarkMode ? 'white' : 'black',
+                  fontSize: '12px',
+                  fontWeight: 600
+                }}
+              >
+                <option value={10}>10</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={200}>200</option>
+                <option value={500}>500</option>
+              </select>
+            </div>
+          </div>
           {loading ? (
             <div style={{ textAlign: 'center', padding: '40px', color: isDarkMode ? '#a0a0a0' : theme.colors.gray500 }}>
               Loading records...

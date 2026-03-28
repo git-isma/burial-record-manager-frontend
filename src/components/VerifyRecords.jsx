@@ -454,6 +454,106 @@ const AttachmentMeta = styled.div`
   }
 `;
 
+
+const VerifyContent = styled.div`
+  text-align: center;
+  padding: 8px 0;
+`;
+
+const VerifyIconWrapper = styled.div`
+  width: 80px;
+  height: 80px;
+  background: ${props => props.$variant === 'success' ? '#ecfdf5' : '#fff7ed'};
+  color: ${props => props.$variant === 'success' ? '#10b981' : '#f59e0b'};
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  font-size: 40px;
+  box-shadow: 0 10px 20px -5px ${props => props.$variant === 'success' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(245, 158, 11, 0.25)'};
+
+  body.dark-theme & {
+    background: ${props => props.$variant === 'success' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)'};
+  }
+`;
+
+const InfoCard = styled.div`
+  background: linear-gradient(135deg, ${theme.colors.gray50} 0%, white 100%);
+  border: 1px solid ${theme.colors.gray200};
+  border-radius: 16px;
+  padding: 24px;
+  margin-top: 24px;
+  text-align: left;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+
+  body.dark-theme & {
+    background: linear-gradient(135deg, #1f1f1f 0%, #2d2d2d 100%);
+    border-color: #3d3d3d;
+  }
+`;
+
+const InfoRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed ${theme.colors.gray200};
+
+  body.dark-theme & {
+    border-bottom-color: #3d3d3d;
+  }
+
+  &:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+`;
+
+const InfoLabel = styled.span`
+  font-size: 11px;
+  color: ${theme.colors.gray500};
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+`;
+
+const InfoValue = styled.span`
+  font-size: 14px;
+  font-weight: 700;
+  color: ${theme.colors.textPrimary};
+
+  body.dark-theme & {
+    color: white;
+  }
+`;
+
+const ModalTitle = styled.h2`
+  font-size: 22px;
+  font-weight: 800;
+  color: ${theme.colors.textPrimary};
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+
+  body.dark-theme & {
+    color: white;
+  }
+`;
+
+const ModalDesc = styled.p`
+  font-size: 15px;
+  color: ${theme.colors.gray600};
+  line-height: 1.6;
+  max-width: 400px;
+  margin: 0 auto;
+
+  body.dark-theme & {
+    color: #9ca3af;
+  }
+`;
+
 function VerifyRecords() {
   const navigate = useNavigate();
   const { formatDate } = useSettings();
@@ -874,25 +974,45 @@ function VerifyRecords() {
         onConfirm={confirmVerify}
         title="Verify Record"
         message={
-          <div>
-            <p style={{ marginBottom: '12px' }}>Are you sure you want to verify the record for <strong>{verifyModal.recordName}</strong>?</p>
-            <div style={{ backgroundColor: theme.colors.gray50, padding: '12px', borderRadius: '8px', border: `1px solid ${theme.colors.gray200}` }}>
-              <p style={{ fontSize: '13px', margin: '0 0 4px 0', color: theme.colors.gray600 }}>Assignment Details:</p>
-              <p style={{ margin: '0', fontWeight: '600', color: theme.colors.textPrimary }}>Record No: {verifyModal.recordNumber || 'Loading...'}</p>
-              <p style={{ margin: '0', fontWeight: '600', color: theme.colors.textPrimary }}>Receipt No: {verifyModal.receiptNo || 'Loading...'}</p>
-              <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: `1px solid ${theme.colors.gray200}` }}>
-                <p style={{ margin: '0', fontSize: '13px', color: theme.colors.gray600 }}>Payment Summary:</p>
-                <p style={{ margin: '0', fontWeight: '600', color: theme.colors.textPrimary }}>Amount Paid: KES {(verifyModal.amountToPayNow || 0).toLocaleString()}</p>
-                <p style={{ margin: '0', fontWeight: '700', color: (verifyModal.pendingAmount || 0) > 0 ? theme.colors.danger : theme.colors.success }}>
-                  Pending Amount: KES {(verifyModal.pendingAmount || 0).toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </div>
+          <VerifyContent>
+            <VerifyIconWrapper $variant="success">
+              <MdCheckCircle />
+            </VerifyIconWrapper>
+            <ModalTitle>Verify Record</ModalTitle>
+            <ModalDesc>
+              Are you sure you want to verify the record for <strong>{verifyModal.recordName}</strong>? 
+              This will assign a permanent record number and notify the applicant.
+            </ModalDesc>
+
+            <InfoCard>
+              <SectionTitle style={{ fontSize: '12px', marginTop: 0 }}>Assignment Details</SectionTitle>
+              <InfoRow>
+                <InfoLabel>Record Number</InfoLabel>
+                <InfoValue>{verifyModal.recordNumber || 'Generating...'}</InfoValue>
+              </InfoRow>
+              <InfoRow>
+                <InfoLabel>Receipt Number</InfoLabel>
+                <InfoValue>{verifyModal.receiptNo || 'Generating...'}</InfoValue>
+              </InfoRow>
+
+              <SectionTitle style={{ fontSize: '12px', marginTop: '16px' }}>Payment Summary</SectionTitle>
+              <InfoRow>
+                <InfoLabel>Amount Paid</InfoLabel>
+                <InfoValue style={{ color: theme.colors.success }}>KES {(verifyModal.amountToPayNow || 0).toLocaleString()}</InfoValue>
+              </InfoRow>
+              <InfoRow>
+                <InfoLabel>Pending Balance</InfoLabel>
+                <InfoValue style={{ color: (verifyModal.pendingAmount || 0) > 0 ? theme.colors.danger : theme.colors.success }}>
+                  KES {(verifyModal.pendingAmount || 0).toLocaleString()}
+                </InfoValue>
+              </InfoRow>
+            </InfoCard>
+          </VerifyContent>
         }
         confirmText={processing ? "Verifying..." : "Verify Record"}
         cancelText="Cancel"
         variant="success"
+        icon={null}
       />
 
       {/* Reject Modal */}
@@ -901,49 +1021,74 @@ function VerifyRecords() {
         onClose={() => setRejectModal({ isOpen: false, recordId: null, recordName: '' })}
         title="Reject Record"
       >
-        <div style={{ padding: '0 4px' }}>
-          <p style={{ marginBottom: '12px', color: theme.colors.gray700 }}>
-            Please provide a reason for rejecting the record for <strong>{rejectModal.recordName}</strong>.
-            This will be sent to the applicant.
-          </p>
-          <TextArea
-            placeholder="Enter rejection reason..."
-            value={rejectionReason}
-            onChange={(e) => setRejectionReason(e.target.value)}
-          />
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-            <button
-              onClick={() => setRejectModal({ isOpen: false, recordId: null, recordName: '' })}
+        <VerifyContent>
+          <VerifyIconWrapper $variant="danger" style={{ color: theme.colors.danger, background: '#fef2f2', boxShadow: '0 8px 16px -4px rgba(239, 68, 68, 0.2)' }}>
+            <MdCancel />
+          </VerifyIconWrapper>
+          <ModalTitle>Reject Record</ModalTitle>
+          <ModalDesc>
+            Please provide a clear reason for rejecting the record for <strong>{rejectModal.recordName}</strong>. 
+            This notification will be sent to the applicant.
+          </ModalDesc>
+
+          <div style={{ marginTop: '24px', textAlign: 'left' }}>
+            <label style={{ fontSize: '12px', fontWeight: 600, color: theme.colors.gray500, textTransform: 'uppercase', display: 'block', marginBottom: '8px', paddingLeft: '4px' }}>
+              Rejection Reason
+            </label>
+            <textarea
+              placeholder="e.g. Incomplete documentation, missing permit ID, etc."
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
               style={{
-                padding: '10px 16px',
-                background: 'white',
-                border: `1px solid ${theme.colors.gray300}`,
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: 600,
-                color: theme.colors.gray700
+                width: '100%',
+                minHeight: '120px',
+                padding: '16px',
+                borderRadius: '16px',
+                border: `1px solid ${theme.colors.gray200}`,
+                fontSize: '14px',
+                fontFamily: 'inherit',
+                lineHeight: '1.6',
+                background: theme.colors.gray50,
+                resize: 'vertical',
+                outline: 'none',
+                transition: 'all 0.2s'
               }}
+              onFocus={(e) => {
+                e.target.style.borderColor = theme.colors.danger;
+                e.target.style.boxShadow = '0 0 0 4px rgba(239, 68, 68, 0.1)';
+                e.target.style.background = 'white';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = theme.colors.gray200;
+                e.target.style.boxShadow = 'none';
+                e.target.style.background = theme.colors.gray50;
+              }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '32px' }}>
+            <Button
+              $variant="secondary"
+              onClick={() => setRejectModal({ isOpen: false, recordId: null, recordName: '' })}
+              style={{ padding: '12px 24px' }}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={confirmReject}
               disabled={processing}
-              style={{
-                padding: '10px 16px',
+              style={{ 
+                padding: '12px 24px', 
                 background: theme.colors.danger,
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: 600,
                 color: 'white',
+                border: 'none',
                 opacity: processing ? 0.7 : 1
               }}
             >
               {processing ? "Rejecting..." : "Reject Record"}
-            </button>
+            </Button>
           </div>
-        </div>
+        </VerifyContent>
       </Modal>
 
       {/* View Details Modal */}
