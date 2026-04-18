@@ -49,6 +49,7 @@ export const API_ENDPOINTS = {
         UPDATE_PUBLIC_RECORD: (id) => `/records/public-record/${id}`,
         LATEST_NUMBER: '/records/latest-record-number',
         LATEST_RECEIPT_NUMBER: '/records/latest-receipt-number',
+        PENDING_COUNTS: '/records/pending-counts',
     },
 
     // Reports & Analytics Endpoints
@@ -166,6 +167,7 @@ export const apiService = {
     getLatestReceiptNo: () => axios.get(API_ENDPOINTS.RECEIPT.LATEST),
     getLatestRecordNumber: () => axios.get(API_ENDPOINTS.RECORDS.LATEST_NUMBER),
     getLatestReceiptNumber: () => axios.get(API_ENDPOINTS.RECORDS.LATEST_RECEIPT_NUMBER),
+    getPendingCounts: () => axios.get(API_ENDPOINTS.RECORDS.PENDING_COUNTS),
 };
 
 export default apiService;

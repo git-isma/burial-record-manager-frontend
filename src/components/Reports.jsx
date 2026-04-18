@@ -754,7 +754,7 @@ function Reports() {
       const addHeader = (doc) => {
         const width = doc.internal.pageSize.getWidth();
         const centerX = width / 2;
-        
+
         // Top Accent Line
         doc.setFillColor(...BRAND.primary);
         doc.rect(0, 0, width, 4, 'F');
@@ -762,36 +762,36 @@ function Reports() {
         // Branding Row (Logo Centered)
         try {
           doc.addImage(ismaLogo, 'PNG', centerX - 12, 8, 24, 24);
-        } catch (e) {}
+        } catch (e) { }
 
         doc.setTextColor(...BRAND.primary);
         doc.setFontSize(22);
         doc.setFont('helvetica', 'bold');
         doc.text('Islamia School & Mosque Association', centerX, 40, { align: 'center' });
-        
+
         doc.setFontSize(9);
         doc.setTextColor(...BRAND.subtext);
         doc.setFont('helvetica', 'normal');
         doc.text('CUSTODIANS OF THE SUNNI MUSMUSLIM CEMETERIES - KARIOKOR & LANGATA', centerX, 45, { align: 'center' });
-        
+
         doc.setFontSize(7.5);
         doc.text('P.O. Box 21015 - 00500 NAIROBI | Cell: +254 113217749 | Email: office@isma.co.ke', centerX, 49, { align: 'center' });
-        
+
         // Professional Divider
         doc.setDrawColor(...BRAND.primary);
         doc.setLineWidth(0.3);
         doc.line(margin, 54, width - margin, 54);
-        
+
         // Detailed Info Bar (Subheader)
         doc.setFillColor(...BRAND.secondary);
         doc.rect(margin, 57, width - margin * 2, 10, 'F');
-        
+
         doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...BRAND.primary);
         const reportTitle = `${filters.reportType.toUpperCase()} BURIAL RECORD REPORT`;
         doc.text(reportTitle, centerX, 63.5, { align: 'center' });
-        
+
         doc.setFontSize(7);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(...BRAND.subtext);
@@ -828,7 +828,7 @@ function Reports() {
         const canvas = await html2canvas(statsGrid, { scale: 2, useCORS: true });
         const imgWidth = pageWidth - margin * 2;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        
+
         pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, y, imgWidth, imgHeight);
         y += imgHeight + 12;
       }
@@ -860,8 +860,8 @@ function Reports() {
         addHeader(pdf);
 
         const detailedHeaders = [
-          'Record Index', 'Deceased Information', 'Burial Logistics', 
-          'Applicant Details', 'Billing & Permits', 
+          'Record Index', 'Deceased Information', 'Burial Logistics',
+          'Applicant Details', 'Billing & Permits',
           'Financial Services', 'Process Status'
         ];
 
@@ -871,7 +871,7 @@ function Reports() {
           `Date of Death: ${record.dateOfDeath ? formatDate(record.dateOfDeath) : '-'}\nDate of Burial: ${record.dateOfBurial ? formatDate(record.dateOfBurial) : '-'}\nLocation: ${record.burialLocation || '-'}\nTime: ${record.burialTime || '-'}`,
           `Applicant: ${record.applicantName || '-'}\nPhone No: ${record.applicantPhone || '-'}\nEmail: ${record.applicantEmail || '-'}\nNext of Kin: ${record.nextOfKinName || '-'}\nRelation: ${record.nextOfKinRelationship || '-'}`,
           `Permit No: ${record.burialPermitNumber || '-'}\nM-Pesa Ref: ${record.mpesaRefNo || '-'}\nReceipt No: ${record.receiptNo || '-'}\nTemp Receipt: ${record.tempReceiptNo || '-'}`,
-          `Burial Charge: ${ (record.amountPayableBurial || 0).toLocaleString() }\nAmount Paid: ${ (record.amountToPayNow || 0).toLocaleString() }\nBalance Due: ${ (record.pendingAmount || 0).toLocaleString() }\nSecondary: ${record.secondaryService || 'None'}`,
+          `Burial Charge: ${(record.amountPayableBurial || 0).toLocaleString()}\nAmount Paid: ${(record.amountToPayNow || 0).toLocaleString()}\nBalance Due: ${(record.pendingAmount || 0).toLocaleString()}\nDiscount By: ${record.discountApprovedBy || '-'}`,
           `${record.status || 'Pending'}${record.rejectionReason ? '\n' + record.rejectionReason : ''}`
         ]);
 
@@ -951,8 +951,7 @@ function Reports() {
           'Date of Death', 'Date of Burial', 'Burial Location', 'Burial Time',
           'Next of Kin Name', 'Next of Kin Contact', 'Next of Kin ID/Passport', 'Relationship',
           'Burial Permit No', 'Burial Permit Date', 'Burial Permit Issued By', 'Issued By Contact', 'Issued To', 'Issued To Contact',
-          'Primary Service', 'Amount Payable (Burial)', 'Actual Amount Paid', 'Pending Amount',
-          'Secondary Service', 'Secondary Amount', 'Tertiary Service', 'Tertiary Amount',
+          'Primary Service', 'Amount Payable (Burial)', 'Actual Amount Paid', 'Pending Amount', 'Discount Approved By',
           'M-Pesa Ref No', 'Receipt No', 'Temp Receipt No', 'Status', 'Rejection Reason', 'Issuance Date'
         ];
         const recordsRows = allRecords.map(record => [
@@ -988,10 +987,7 @@ function Reports() {
           record.amountPayableBurial || 0,
           record.amountToPayNow || 0,
           record.pendingAmount || 0,
-          record.secondaryService || '',
-          record.amountPayableSecondary || 0,
-          record.tertiaryService || '',
-          record.amountPayableTertiary || 0,
+          record.discountApprovedBy || '',
           record.mpesaRefNo || '',
           record.receiptNo || '',
           record.tempReceiptNo || '',
@@ -1421,8 +1417,8 @@ Status: ${record.status}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '12px', color: isDarkMode ? '#aaa' : '#666', fontWeight: 500 }}>Rows per page:</span>
-              <select 
-                value={pageSize} 
+              <select
+                value={pageSize}
                 onChange={(e) => {
                   setPageSize(Number(e.target.value));
                   setCurrentPage(1);

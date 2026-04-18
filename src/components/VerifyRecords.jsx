@@ -554,14 +554,89 @@ const ModalDesc = styled.p`
   }
 `;
 
+const TabContainer = styled.div`
+  display: flex;
+  gap: ${theme.spacing.sm};
+  margin-bottom: ${theme.spacing.xl};
+  border-bottom: 2px solid ${theme.colors.gray200};
+
+  body.dark-theme & {
+    border-bottom-color: #3d3d3d;
+  }
+`;
+
+const Tab = styled.button`
+  padding: ${theme.spacing.md} ${theme.spacing.lg};
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: ${theme.colors.gray600};
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all ${theme.transitions.fast};
+  position: relative;
+  bottom: -2px;
+
+  body.dark-theme & {
+    color: #9ca3af;
+  }
+
+  &:hover {
+    color: ${theme.colors.primarySolid};
+    background: ${theme.colors.gray50};
+
+    body.dark-theme & {
+      color: #a78bfa;
+      background: #2d2d2d;
+    }
+  }
+
+  &.active {
+    color: ${theme.colors.primarySolid};
+    border-bottom-color: ${theme.colors.primarySolid};
+
+    body.dark-theme & {
+      color: #a78bfa;
+      border-bottom-color: #7c3aed;
+    }
+  }
+
+  .count {
+    display: inline-block;
+    margin-left: ${theme.spacing.xs};
+    padding: 2px 8px;
+    background: ${theme.colors.gray200};
+    border-radius: ${theme.borderRadius.full};
+    font-size: 12px;
+    font-weight: 700;
+
+    body.dark-theme & {
+      background: #3d3d3d;
+    }
+  }
+
+  &.active .count {
+    background: ${theme.colors.primarySolid};
+    color: white;
+
+    body.dark-theme & {
+      background: #7c3aed;
+    }
+  }
+`;
+
 function VerifyRecords() {
   const navigate = useNavigate();
   const { formatDate } = useSettings();
   const { showToast } = useToast();
+  const [activeTab, setActiveTab] = useState('public'); // 'public' or 'staff'
   const [records, setRecords] = useState([]);
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, total: 0 });
+  const [publicCount, setPublicCount] = useState(0);
+  const [staffCount, setStaffCount] = useState(0);
   const [filters, setFilters] = useState({
     dateOfDeath: '',
     burialLocation: '',
@@ -577,12 +652,29 @@ function VerifyRecords() {
   const [viewModal, setViewModal] = useState({ isOpen: false, record: null });
   const [rejectionReason, setRejectionReason] = useState('');
   const [processing, setProcessing] = useState(false);
-  const [nextNumbers, setNextNumbers] = useState({ recordNumber: '', receiptNo: '' });
+  const [nextNumbers, setNextNumbers] = useState({ recordNumber: '', receiptNo: '', discountApprovedBy: '' });
 
-  useEffect(() => { 
-    fetchRecords(); 
+  useEffect(() => {
+    fetchRecords();
     fetchLocations();
-  }, [pagination.currentPage]);
+  }, [pagination.currentPage, activeTab]);
+
+  // Fetch counts separately on mount and after actions
+  useEffect(() => {
+    fetchAllCounts();
+  }, []);
+
+  const fetchAllCounts = async () => {
+    try {
+      const res = await apiService.getPendingCounts();
+      if (res.data.success) {
+        setPublicCount(res.data.publicCount || 0);
+        setStaffCount(res.data.staffCount || 0);
+      }
+    } catch (err) {
+      console.error('Error fetching pending counts:', err);
+    }
+  };
 
   const fetchLocations = async () => {
     try {
@@ -600,29 +692,62 @@ function VerifyRecords() {
   const fetchRecords = async () => {
     setLoading(true);
     try {
-      // Assuming GET /public-records?status=Pending is what we want
-      const params = { 
-        page: pagination.currentPage, 
-        limit: 10, 
+      const params = {
+        page: pagination.currentPage,
+        limit: 10,
         ...filters,
         endDate: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
       };
-      const res = await apiService.getPublicRecords(params);
 
-      if (res.data.success) {
-        setRecords(res.data.data || []);
-        const paging = res.data.pagination || {};
-        setPagination({
-          currentPage: paging.currentPage || 1,
-          totalPages: paging.totalPages || 1,
-          total: paging.total || 0
-        });
+      let res;
+      if (activeTab === 'public') {
+        // Fetch public records (from public submissions)
+        res = await apiService.getPublicRecords(params);
       } else {
-        setRecords([]);
+        // Fetch staff records (from staff data capture)
+        res = await apiService.getRecords(params);
       }
+
+      console.log('Fetch records response:', res.data);
+
+      // Handle different response structures
+      let data = [];
+      let paging = {};
+
+      if (activeTab === 'public') {
+        // Public records response: { success: true, data: [...], pagination: {...} }
+        if (res.data.success) {
+          data = res.data.data || [];
+          paging = res.data.pagination || {};
+        }
+      } else {
+        // Staff records response: { records: [...], totalPages: X, currentPage: Y, totalRecords: Z }
+        if (res.data.records) {
+          data = res.data.records || [];
+          paging = {
+            currentPage: res.data.currentPage || 1,
+            totalPages: res.data.totalPages || 1,
+            total: res.data.totalRecords || 0
+          };
+        } else if (res.data.docs) {
+          // Mongoose paginate format
+          data = res.data.docs || [];
+          paging = {
+            currentPage: res.data.page || 1,
+            totalPages: res.data.totalPages || 1,
+            total: res.data.totalDocs || 0
+          };
+        }
+      }
+
+      setRecords(data);
+      setPagination({
+        currentPage: paging.currentPage || 1,
+        totalPages: paging.totalPages || 1,
+        total: paging.total || 0
+      });
     } catch (err) {
-      console.error('Error fetching public records:', err);
-      // Fallback or empty state if API fails (e.g., pending backend implementation)
+      console.error('Error fetching records:', err);
       setRecords([]);
     } finally {
       setLoading(false);
@@ -648,7 +773,9 @@ function VerifyRecords() {
         recordNumber: nextRecNum,
         receiptNo: nextReceiptNum,
         amountToPayNow: record.amountToPayNow,
-        pendingAmount: record.pendingAmount
+        pendingAmount: record.pendingAmount,
+        amountPayableBurial: record.amountPayableBurial,
+        discountApprovedBy: record.discountApprovedBy
       });
     } catch (err) {
       console.error('Error fetching next numbers:', err);
@@ -670,7 +797,13 @@ function VerifyRecords() {
   const handleViewClick = async (record) => {
     setViewModal({ isOpen: true, record: record }); // Show list data initially
     try {
-      const res = await apiService.getPublicRecord(record._id);
+      let res;
+      if (activeTab === 'public') {
+        res = await apiService.getPublicRecord(record._id);
+      } else {
+        res = await apiService.getRecord(record._id);
+      }
+
       // Handle both { success: true, data: {...} } and direct object response
       let recordData = res.data.success === true ? res.data.data : res.data;
 
@@ -693,14 +826,25 @@ function VerifyRecords() {
   const confirmVerify = async () => {
     setProcessing(true);
     try {
-      const res = await apiService.verifyPublicRecord(verifyModal.recordId, { 
+      const verifyData = {
         status: 'Verified',
         recordNumber: verifyModal.recordNumber,
-        receiptNo: verifyModal.receiptNo
-      });
+        receiptNo: verifyModal.receiptNo,
+        discountApprovedBy: verifyModal.discountApprovedBy
+      };
+
+      let res;
+      if (activeTab === 'public') {
+        res = await apiService.verifyPublicRecord(verifyModal.recordId, verifyData);
+      } else {
+        // For staff records, use the regular update endpoint
+        res = await apiService.updateRecord(verifyModal.recordId, verifyData);
+      }
+
       showToast(res.data.message || 'Record verified successfully', 'success');
-      setVerifyModal({ isOpen: false, recordId: null, recordName: '', recordNumber: '', receiptNo: '' });
+      setVerifyModal({ isOpen: false, recordId: null, recordName: '', recordNumber: '', receiptNo: '', discountApprovedBy: '' });
       fetchRecords(); // Refresh list
+      fetchAllCounts(); // Refresh counts
     } catch (err) {
       showToast(err.response?.data?.msg || 'Error verifying record', 'error');
     } finally {
@@ -715,13 +859,23 @@ function VerifyRecords() {
     }
     setProcessing(true);
     try {
-      const res = await apiService.verifyPublicRecord(rejectModal.recordId, {
+      const rejectData = {
         status: 'Rejected',
         rejectionReason
-      });
+      };
+
+      let res;
+      if (activeTab === 'public') {
+        res = await apiService.verifyPublicRecord(rejectModal.recordId, rejectData);
+      } else {
+        // For staff records, use the regular update endpoint
+        res = await apiService.updateRecord(rejectModal.recordId, rejectData);
+      }
+
       showToast(res.data.message || 'Record rejected', 'info');
       setRejectModal({ isOpen: false, recordId: null, recordName: '' });
       fetchRecords(); // Refresh list
+      fetchAllCounts(); // Refresh counts
     } catch (err) {
       showToast(err.response?.data?.msg || 'Error rejecting record', 'error');
     } finally {
@@ -759,9 +913,9 @@ function VerifyRecords() {
       // So detailed fetchRecords is needed or a helper.
       // Let's just create a quick internal fetch with cleared params
       setLoading(true);
-      apiService.getPublicRecords({ 
-        page: 1, 
-        limit: 10, 
+      apiService.getPublicRecords({
+        page: 1,
+        limit: 10,
         status: 'Pending',
         endDate: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
       })
@@ -785,9 +939,32 @@ function VerifyRecords() {
   return (
     <RecordsContainer>
       <PageHeader>
-        <h1>Verify Public Records</h1>
-        <p>Review and verify burial record submissions from the public.</p>
+        <h1>Verify Records</h1>
+        <p>Review and verify burial record submissions.</p>
       </PageHeader>
+
+      <TabContainer>
+        <Tab
+          className={activeTab === 'public' ? 'active' : ''}
+          onClick={() => {
+            setActiveTab('public');
+            setPagination({ currentPage: 1, totalPages: 1, total: 0 });
+          }}
+        >
+          Public Submissions
+          <span className="count">{publicCount}</span>
+        </Tab>
+        <Tab
+          className={activeTab === 'staff' ? 'active' : ''}
+          onClick={() => {
+            setActiveTab('staff');
+            setPagination({ currentPage: 1, totalPages: 1, total: 0 });
+          }}
+        >
+          Staff Records
+          <span className="count">{staffCount}</span>
+        </Tab>
+      </TabContainer>
 
       <FilterSection>
         <h3>Filter Records</h3>
@@ -822,12 +999,12 @@ function VerifyRecords() {
           </FormGroup>
           <FormGroup>
             <label>Applicant Email / ID</label>
-            <input 
-              type="text" 
-              name="applicantEmail" 
-              placeholder="Enter Email or ID" 
-              value={filters.applicantEmail} 
-              onChange={handleFilterChange} 
+            <input
+              type="text"
+              name="applicantEmail"
+              placeholder="Enter Email or ID"
+              value={filters.applicantEmail}
+              onChange={handleFilterChange}
             />
           </FormGroup>
           <FormGroup>
@@ -851,7 +1028,7 @@ function VerifyRecords() {
         </FiltersGrid>
         <FilterButtons>
           <Button $variant="primary" onClick={applyFilters}>
-             Apply Filters
+            Apply Filters
           </Button>
           <Button $variant="secondary" onClick={resetFilters}>
             Reset
@@ -861,7 +1038,9 @@ function VerifyRecords() {
 
       <RecordsCard>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h3 style={{ margin: 0 }}>Verification Pending Records</h3>
+          <h3 style={{ margin: 0 }}>
+            {activeTab === 'public' ? 'Public Submissions' : 'Staff Records'} - Pending Verification
+          </h3>
         </div>
 
         {loading ? (
@@ -870,7 +1049,9 @@ function VerifyRecords() {
           <EmptyState
             icon={<MdDescription size={48} />}
             title="No Verification Pending Records"
-            description="There are no public record submissions waiting for verification."
+            description={activeTab === 'public'
+              ? "There are no public record submissions waiting for verification."
+              : "There are no staff records waiting for verification."}
           />
         ) : (
           <>
@@ -938,7 +1119,7 @@ function VerifyRecords() {
                               className="edit"
                               title="Edit Rejected Record"
                               style={{ color: theme.colors.warning }}
-                              onClick={() => navigate(`/data-capture?edit=${record._id}&type=public`)}
+                              onClick={() => navigate(`/data-capture?edit=${record._id}${activeTab === 'public' ? '&type=public' : ''}`)}
                             >
                               <MdEdit />
                             </ActionButton>
@@ -970,7 +1151,7 @@ function VerifyRecords() {
       {/* Verify Confirmation Modal */}
       <ConfirmModal
         isOpen={verifyModal.isOpen}
-        onClose={() => setVerifyModal({ isOpen: false, recordId: null, recordName: '', recordNumber: '', receiptNo: '' })}
+        onClose={() => setVerifyModal({ isOpen: false, recordId: null, recordName: '', recordNumber: '', receiptNo: '', discountApprovedBy: '' })}
         onConfirm={confirmVerify}
         title="Verify Record"
         message={
@@ -980,7 +1161,7 @@ function VerifyRecords() {
             </VerifyIconWrapper>
             <ModalTitle>Verify Record</ModalTitle>
             <ModalDesc>
-              Are you sure you want to verify the record for <strong>{verifyModal.recordName}</strong>? 
+              Are you sure you want to verify the record for <strong>{verifyModal.recordName}</strong>?
               This will assign a permanent record number and notify the applicant.
             </ModalDesc>
 
@@ -1006,6 +1187,26 @@ function VerifyRecords() {
                   KES {(verifyModal.pendingAmount || 0).toLocaleString()}
                 </InfoValue>
               </InfoRow>
+              <InfoRow style={{ borderBottom: 'none', paddingBottom: 0 }}>
+                <InfoLabel>Discount Approved By</InfoLabel>
+                <input
+                  type="text"
+                  placeholder="Approved by..."
+                  value={verifyModal.discountApprovedBy || ''}
+                  onChange={(e) => setVerifyModal(prev => ({ ...prev, discountApprovedBy: e.target.value }))}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid ' + (verifyModal.discountApprovedBy ? theme.colors.warning : theme.colors.gray300),
+                    fontSize: '13px',
+                    width: '180px',
+                    textAlign: 'right',
+                    fontWeight: 600,
+                    outline: 'none',
+                    background: verifyModal.discountApprovedBy ? '#fffcf0' : 'white'
+                  }}
+                />
+              </InfoRow>
             </InfoCard>
           </VerifyContent>
         }
@@ -1027,7 +1228,7 @@ function VerifyRecords() {
           </VerifyIconWrapper>
           <ModalTitle>Reject Record</ModalTitle>
           <ModalDesc>
-            Please provide a clear reason for rejecting the record for <strong>{rejectModal.recordName}</strong>. 
+            Please provide a clear reason for rejecting the record for <strong>{rejectModal.recordName}</strong>.
             This notification will be sent to the applicant.
           </ModalDesc>
 
@@ -1077,8 +1278,8 @@ function VerifyRecords() {
             <Button
               onClick={confirmReject}
               disabled={processing}
-              style={{ 
-                padding: '12px 24px', 
+              style={{
+                padding: '12px 24px',
                 background: theme.colors.danger,
                 color: 'white',
                 border: 'none',
@@ -1200,6 +1401,14 @@ function VerifyRecords() {
                 <ViewItem>
                   <ViewLabel>Date of Burial</ViewLabel>
                   <ViewValue>{formatDate(viewModal.record.dateOfBurial)}</ViewValue>
+                </ViewItem>
+              )}
+              {viewModal.record.discountApprovedBy && (
+                <ViewItem>
+                  <ViewLabel>Discount Approved By</ViewLabel>
+                  <ViewValue style={{ color: theme.colors.warning, fontWeight: 700 }}>
+                    {viewModal.record.discountApprovedBy}
+                  </ViewValue>
                 </ViewItem>
               )}
             </ViewGrid>
@@ -1359,6 +1568,22 @@ function VerifyRecords() {
                   <ViewValue>{viewModal.record.tempReceiptNo}</ViewValue>
                 </ViewItem>
               )}
+              <ViewItem>
+                <ViewLabel>Discount Approved By</ViewLabel>
+                <ViewValue style={viewModal.record.discountApprovedBy ? {
+                  backgroundColor: '#fef3c7',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid #f59e0b',
+                  color: '#92400e',
+                  fontWeight: 600
+                } : {
+                  color: '#9ca3af',
+                  fontStyle: 'italic'
+                }}>
+                  {viewModal.record.discountApprovedBy || 'N/A'}
+                </ViewValue>
+              </ViewItem>
             </ViewGrid>
 
             <SectionTitle>Submission Information</SectionTitle>

@@ -620,7 +620,7 @@ function DataCapture() {
     const day = String(today.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   };
-  
+
   const generateNextApplicantId = (latestId) => {
     const currentYear = new Date().getFullYear();
 
@@ -730,12 +730,6 @@ function DataCapture() {
       formData.nextOfKinName,
       formData.nextOfKinRelationship,
       formData.nextOfKinContact,
-      formData.burialPermitNumber,
-      formData.burialPermitDate,
-      formData.burialPermitIssuedBy,
-      formData.burialPermitIssuedByContact,
-      formData.burialPermitIssuedTo,
-      formData.burialPermitIssuedToContact,
       formData.burialLocation,
       formData.burialTime,
       formData.receiptNo,
@@ -745,6 +739,15 @@ function DataCapture() {
 
     if (!isExempt) {
       baseRequired.push(formData.firstName, formData.lastName);
+      // Burial permit fields are only required for non-Stillborn/Infant
+      baseRequired.push(
+        formData.burialPermitNumber,
+        formData.burialPermitDate,
+        formData.burialPermitIssuedBy,
+        formData.burialPermitIssuedByContact,
+        formData.burialPermitIssuedTo,
+        formData.burialPermitIssuedToContact
+      );
     }
 
     if (formData.status === "Rejected") {
@@ -988,6 +991,7 @@ function DataCapture() {
         amountPayableTertiary: (record.amountPayableTertiary !== undefined && record.amountPayableTertiary !== null) ? record.amountPayableTertiary : 0,
         mpesaRefNo: record.mpesaRefNo || "",
         receiptNo: record.receiptNo || "",
+
         status:
           record.status === "Pending"
             ? "Verification Pending"
@@ -1027,17 +1031,17 @@ function DataCapture() {
       setFormData({ ...formData, [name]: value, rejectionReason: "" });
     } else if (name === "ageCategory") {
       if (value === "Infant") {
-        setFormData({ 
-          ...formData, 
-          [name]: value, 
+        setFormData({
+          ...formData,
+          [name]: value,
           age: "1",
           amountPayableBurial: 4000,
           amountToPayNow: 4000
         });
       } else if (value === "Stillborn") {
-        setFormData({ 
-          ...formData, 
-          [name]: value, 
+        setFormData({
+          ...formData,
+          [name]: value,
           age: "0",
           amountPayableBurial: 4000,
           amountToPayNow: 4000
@@ -1125,6 +1129,21 @@ function DataCapture() {
           error("Date of Burial cannot be earlier than Date of Death");
           return;
         }
+      }
+    }
+
+    // Validate Burial Permit Date logic
+    if (formData.burialPermitDate && formData.dateOfBurial) {
+      const permitDate = new Date(formData.burialPermitDate);
+      const burialDate = new Date(formData.dateOfBurial);
+
+      // Set to midnight for date-only comparison
+      permitDate.setHours(0, 0, 0, 0);
+      burialDate.setHours(0, 0, 0, 0);
+
+      if (permitDate > burialDate) {
+        error("Date of Burial Permit cannot be after the Date of Burial");
+        return;
       }
     }
 
@@ -1262,6 +1281,7 @@ function DataCapture() {
         "amountPayableSecondary",
         "amountPayableTertiary",
         "mpesaRefNo",
+
         "secondaryService",
         "tertiaryService",
         "rejectionReason",
@@ -1329,6 +1349,7 @@ function DataCapture() {
           amountPayableTertiary: "",
           mpesaRefNo: "",
           receiptNo: "",
+
           status: "Verification Pending",
           rejectionReason: "",
         });
@@ -1373,6 +1394,7 @@ function DataCapture() {
       amountPayableTertiary: "",
       mpesaRefNo: "",
       receiptNo: "",
+
       status: "Verification Pending",
       rejectionReason: "",
     });
@@ -2329,6 +2351,7 @@ function DataCapture() {
                 </Button>
               </div>
             </FormGroup>
+
           </FormGrid>
 
           <SectionTitle>
@@ -2448,8 +2471,8 @@ function DataCapture() {
                     const fileUrl = URL.createObjectURL(file);
 
                     return (
-                      <AttachmentItem 
-                        key={index} 
+                      <AttachmentItem
+                        key={index}
                         href={fileUrl}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -2464,15 +2487,15 @@ function DataCapture() {
                           <p className="file-name" title={file.name}>{file.name}</p>
                           <p className="file-date">{(file.size / 1024 / 1024).toFixed(2)} MB • Ready</p>
                         </div>
-                        <button 
-                          type="button" 
-                          onClick={(e) => { 
+                        <button
+                          type="button"
+                          onClick={(e) => {
                             e.preventDefault(); // Prevent opening the link when clicking remove
-                            e.stopPropagation(); 
-                            handleRemoveFile(index); 
+                            e.stopPropagation();
+                            handleRemoveFile(index);
                             URL.revokeObjectURL(fileUrl); // Clean up memory
-                          }} 
-                          style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "4px" }} 
+                          }}
+                          style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "4px" }}
                           title="Remove file"
                         >
                           <MdCancel size={24} />

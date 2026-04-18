@@ -277,6 +277,20 @@ function DocumentViewer() {
           {record.pendingAmount !== undefined && (
             <p>Pending Amount: KES {record.pendingAmount.toLocaleString()}</p>
           )}
+          {record.discountApprovedBy && (
+            <p style={{
+              marginTop: '8px',
+              backgroundColor: '#fef3c7',
+              padding: '6px 10px',
+              borderRadius: '4px',
+              border: '1px solid #f59e0b',
+              color: '#92400e',
+              fontWeight: 600,
+              fontSize: '13px'
+            }}>
+              Discount By: {record.discountApprovedBy}
+            </p>
+          )}
         </InfoSection>
 
         <InfoSection>

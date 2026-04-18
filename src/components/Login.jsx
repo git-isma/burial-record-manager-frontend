@@ -402,7 +402,7 @@ function Login({ onLogin }) {
 
         <InfoBox>
           <strong>Default Credentials</strong>
-          <p>Email: admin@burial-permit.com</p>
+          <p>Email: superadmin@isma.co.ke</p>
           <p>Password: admin123</p>
         </InfoBox>
       </LoginCard>
