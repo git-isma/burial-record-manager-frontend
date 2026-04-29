@@ -19,7 +19,8 @@ const RecordsContainer = styled.div`
 
 const FilterSection = styled(Card)`
   margin-bottom: ${theme.spacing.xl};
-  /* Removed z-index: 50 to prevent overlapping with sticky header */
+  position: relative;
+  z-index: 10;
   
   h3 { 
     font-size: 16px; 
@@ -66,8 +67,8 @@ const FormGroup = styled.div`
     }
   }
   input, select {
-    padding: 10px 12px;
-    border: 1px solid ${theme.colors.gray300};
+    padding: 12px 16px;
+    border: 2px solid ${theme.colors.gray200};
     border-radius: ${theme.borderRadius.md};
     font-size: 14px;
     color: ${theme.colors.textPrimary};
@@ -460,10 +461,11 @@ function Records({ user }) {
   const [locations, setLocations] = useState([]);
   const [filters, setFilters] = useState({
     search: '',
+    startDate: '',
+    endDate: '',
     burialLocation: '',
     status: '',
     gender: '',
-    dateRange: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
   });
   const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, total: 0 });
   const [loading, setLoading] = useState(false);
@@ -516,10 +518,11 @@ function Records({ user }) {
   const resetFilters = () => {
     setFilters({
       search: '',
+      startDate: '',
+      endDate: '',
       burialLocation: '',
       status: '',
-      gender: '',
-      dateRange: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
+      gender: ''
     });
     setPagination({ ...pagination, currentPage: 1 });
     setTimeout(fetchRecords, 100);
@@ -589,12 +592,21 @@ function Records({ user }) {
         <h3>Filter Records</h3>
         <FiltersGrid>
           <FormGroup>
-            <label>Date Range</label>
+            <label>From Date (Death/Burial)</label>
             <ModernDatePicker
-              value={filters.dateRange}
-              onChange={handleFilterChange}
-              name="dateRange"
-              placeholder="Pick a date"
+              value={filters.startDate}
+              onChange={(e) => handleFilterChange(e)}
+              name="startDate"
+              placeholder="From date"
+            />
+          </FormGroup>
+          <FormGroup>
+            <label>To Date (Death/Burial)</label>
+            <ModernDatePicker
+              value={filters.endDate}
+              onChange={(e) => handleFilterChange(e)}
+              name="endDate"
+              placeholder="To date"
             />
           </FormGroup>
           <FormGroup>

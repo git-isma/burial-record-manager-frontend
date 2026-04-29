@@ -15,6 +15,8 @@ import Modal from './Modal';
 
 const FilterSection = styled(Card)`
   margin-bottom: ${theme.spacing.xl};
+  position: relative;
+  z-index: 10;
   
   h3 { 
     font-size: 16px; 
@@ -59,8 +61,8 @@ const FormGroup = styled.div`
     }
   }
   input, select {
-    padding: 10px 12px;
-    border: 1px solid ${theme.colors.gray300};
+    padding: 12px 16px;
+    border: 2px solid ${theme.colors.gray200};
     border-radius: ${theme.borderRadius.md};
     font-size: 14px;
     color: ${theme.colors.textPrimary};
@@ -638,7 +640,8 @@ function VerifyRecords() {
   const [publicCount, setPublicCount] = useState(0);
   const [staffCount, setStaffCount] = useState(0);
   const [filters, setFilters] = useState({
-    dateOfDeath: '',
+    startDate: '',
+    endDate: '',
     burialLocation: '',
     gender: '',
     applicantEmail: '',
@@ -696,7 +699,6 @@ function VerifyRecords() {
         page: pagination.currentPage,
         limit: 10,
         ...filters,
-        endDate: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
       };
 
       let res;
@@ -895,11 +897,13 @@ function VerifyRecords() {
 
   const resetFilters = () => {
     setFilters({
-      dateOfDeath: '',
+      startDate: '',
+      endDate: '',
       burialLocation: '',
       gender: '',
       applicantEmail: '',
-      ageCategory: ''
+      ageCategory: '',
+      status: 'Pending'
     });
     setPagination(prev => ({ ...prev, currentPage: 1 }));
     // Use timeout to ensure state update before fetch (or define fetchRecords to use passed params)
@@ -916,8 +920,7 @@ function VerifyRecords() {
       apiService.getPublicRecords({
         page: 1,
         limit: 10,
-        status: 'Pending',
-        endDate: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
+        status: 'Pending'
       })
         .then(res => {
           if (res.data.success) {
@@ -961,7 +964,7 @@ function VerifyRecords() {
             setPagination({ currentPage: 1, totalPages: 1, total: 0 });
           }}
         >
-          Staff Records
+          Back Office Entries
           <span className="count">{staffCount}</span>
         </Tab>
       </TabContainer>
@@ -970,12 +973,21 @@ function VerifyRecords() {
         <h3>Filter Records</h3>
         <FiltersGrid>
           <FormGroup>
-            <label>Date of Death</label>
+            <label>From Date (Death/Burial)</label>
             <ModernDatePicker
-              value={filters.dateOfDeath}
-              onChange={handleFilterChange}
-              name="dateOfDeath"
-              placeholder="Pick a date"
+              value={filters.startDate}
+              onChange={(e) => handleFilterChange(e)}
+              name="startDate"
+              placeholder="From date"
+            />
+          </FormGroup>
+          <FormGroup>
+            <label>To Date (Death/Burial)</label>
+            <ModernDatePicker
+              value={filters.endDate}
+              onChange={(e) => handleFilterChange(e)}
+              name="endDate"
+              placeholder="To date"
             />
           </FormGroup>
           <FormGroup>
@@ -1039,7 +1051,7 @@ function VerifyRecords() {
       <RecordsCard>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h3 style={{ margin: 0 }}>
-            {activeTab === 'public' ? 'Public Submissions' : 'Staff Records'} - Pending Verification
+            {activeTab === 'public' ? 'Public Submissions' : 'Back Office Entries'} - Pending Verification
           </h3>
         </div>
 

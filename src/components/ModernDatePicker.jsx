@@ -404,6 +404,7 @@ function ModernDatePicker({ value, onChange, name, placeholder = "dd - mm - yyyy
         dropdownMode="select"
         yearDropdownItemNumber={100}
         scrollableYearDropdown
+        maxDate={new Date()}
         {...props}
       />
     </DatePickerWrapper>
