@@ -48,6 +48,8 @@ const ReportsContainer = styled.div`
 
 const ControlsCard = styled(Card)`
   margin-bottom: ${theme.spacing.xl};
+  position: relative;
+  z-index: 10;
   h2 { 
     font-size: 18px; 
     font-weight: 700; 
@@ -586,6 +588,8 @@ function Reports() {
   const [filters, setFilters] = useState({
     reportType: 'Summary',
     dateRange: 'all',
+    startDate: '',
+    endDate: '',
     ageCategory: '',
     gender: '',
     burialLocation: ''
@@ -597,6 +601,15 @@ function Reports() {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [monthlyData, setMonthlyData] = useState([]);
   const [genderData, setGenderData] = useState([]);
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    setCurrentPage(1);
+  };
 
   useEffect(() => {
     fetchStats();
@@ -648,33 +661,9 @@ function Reports() {
   };
 
   const getDateRange = () => {
-    const now = new Date();
-    let startDate = null;
-    let endDate = new Date();
-    endDate.setHours(23, 59, 59, 999);
-
-    switch (filters.dateRange) {
-      case 'all':
-        // No date filtering - return null for both to get all records
-        startDate = null;
-        endDate = null;
-        break;
-      case 'last7days':
-        startDate = new Date(now.setDate(now.getDate() - 7));
-        break;
-      case 'last30days':
-        startDate = new Date(now.setDate(now.getDate() - 30));
-        break;
-      case 'last90days':
-        startDate = new Date(now.setDate(now.getDate() - 90));
-        break;
-      case 'thisyear':
-        startDate = new Date(now.getFullYear(), 0, 1);
-        break;
-      default:
-        startDate = null;
-        endDate = null;
-    }
+    const startDate = filters.startDate ? new Date(filters.startDate) : null;
+    const endDate = filters.endDate ? new Date(filters.endDate) : null;
+    if (endDate) endDate.setHours(23, 59, 59, 999);
 
     return { startDate, endDate };
   };
@@ -795,7 +784,8 @@ function Reports() {
         doc.setFontSize(7);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(...BRAND.subtext);
-        doc.text(`Generated: ${formatDate(new Date())} | Records: ${allRecords.length} | Page ${doc.internal.getCurrentPageInfo().pageNumber}`, width - margin - 2, 63.5, { align: 'right' });
+        const dateRangeStr = `Range: ${filters.startDate || 'Any'} to ${filters.endDate || 'Any'}`;
+        doc.text(`Generated: ${formatDate(new Date())} | ${dateRangeStr} | Records: ${allRecords.length} | Page ${doc.internal.getCurrentPageInfo().pageNumber}`, width - margin - 2, 63.5, { align: 'right' });
       };
 
       const finalHeaderY = 72; // Increased to accommodate centered logo
@@ -1020,7 +1010,8 @@ function Reports() {
             ['Filtered Records'],
             ['Current Page:', currentPage],
             ['Filters Applied:'],
-            ['Date Range:', filters.dateRange],
+            ['From Date:', filters.startDate || 'Any'],
+            ['To Date:', filters.endDate || 'Any'],
             ['Gender:', filters.gender || 'All'],
             ['Burial Location:', filters.burialLocation || 'All'],
             [],
@@ -1220,28 +1211,39 @@ Status: ${record.status}
 
       <ControlsCard>
         <h2>Report Controls</h2>
-        <p>Filter data for detailed analysis</p>
+        <p style={{ margin: '0 0 16px 0' }}>Filter data for detailed analysis</p>
+        <p style={{ fontSize: '12px', color: '#666', marginBottom: '16px', marginTop: '-8px' }}>
+          Date filters search records where either the Date of Death or Date of Burial falls within the selected range.
+        </p>
         <FiltersGrid>
           <FormGroup>
             <label>Report Type</label>
-            <select value={filters.reportType} onChange={(e) => setFilters({ ...filters, reportType: e.target.value })}>
+            <select name="reportType" value={filters.reportType} onChange={handleFilterChange}>
               <option value="Summary">Summary</option>
               <option value="Detailed">Detailed</option>
             </select>
           </FormGroup>
           <FormGroup>
-            <label>Date Range</label>
-            <select value={filters.dateRange} onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}>
-              <option value="all">All Time</option>
-              <option value="last7days">Last 7 Days</option>
-              <option value="last30days">Last 30 Days</option>
-              <option value="last90days">Last 90 Days</option>
-              <option value="thisyear">This Year</option>
-            </select>
+            <label>From Date (Death/Burial)</label>
+            <ModernDatePicker
+              value={filters.startDate}
+              onChange={handleFilterChange}
+              name="startDate"
+              placeholder="From date"
+            />
+          </FormGroup>
+          <FormGroup>
+            <label>To Date (Death/Burial)</label>
+            <ModernDatePicker
+              value={filters.endDate}
+              onChange={handleFilterChange}
+              name="endDate"
+              placeholder="To date"
+            />
           </FormGroup>
           <FormGroup>
             <label>Age Category</label>
-            <select value={filters.ageCategory} onChange={(e) => setFilters({ ...filters, ageCategory: e.target.value })}>
+            <select name="ageCategory" value={filters.ageCategory} onChange={handleFilterChange}>
               <option value="">All Categories</option>
               <option value="Stillborn">Stillborn</option>
               <option value="Infant">Infant</option>
@@ -1251,7 +1253,7 @@ Status: ${record.status}
           </FormGroup>
           <FormGroup>
             <label>Gender</label>
-            <select value={filters.gender} onChange={(e) => setFilters({ ...filters, gender: e.target.value })}>
+            <select name="gender" value={filters.gender} onChange={handleFilterChange}>
               <option value="">All</option>
               <option value="Male">Male</option>
               <option value="Female">Female</option>
@@ -1259,7 +1261,7 @@ Status: ${record.status}
           </FormGroup>
           <FormGroup>
             <label>Burial Location</label>
-            <select value={filters.burialLocation} onChange={(e) => setFilters({ ...filters, burialLocation: e.target.value })}>
+            <select name="burialLocation" value={filters.burialLocation} onChange={handleFilterChange}>
               <option value="">All Locations</option>
               {locations.map(loc => (
                 <option key={loc._id} value={loc.name}>{loc.name}</option>
