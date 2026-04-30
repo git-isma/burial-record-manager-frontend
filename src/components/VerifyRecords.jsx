@@ -639,15 +639,17 @@ function VerifyRecords() {
   const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, total: 0 });
   const [publicCount, setPublicCount] = useState(0);
   const [staffCount, setStaffCount] = useState(0);
+  const today = new Date().toISOString().split('T')[0];
   const [filters, setFilters] = useState({
-    startDate: '',
-    endDate: '',
+    startDate: today,
+    endDate: today,
     burialLocation: '',
     gender: '',
     applicantEmail: '',
     ageCategory: '',
     status: 'Pending'
   });
+  const [isFilterApplied, setIsFilterApplied] = useState(false);
 
   // Modal States
   const [verifyModal, setVerifyModal] = useState({ isOpen: false, recordId: null, recordName: '' });
@@ -660,7 +662,7 @@ function VerifyRecords() {
   useEffect(() => {
     fetchRecords();
     fetchLocations();
-  }, [pagination.currentPage, activeTab]);
+  }, [pagination.currentPage, activeTab, isFilterApplied]);
 
   // Fetch counts separately on mount and after actions
   useEffect(() => {
@@ -700,6 +702,19 @@ function VerifyRecords() {
         limit: 10,
         ...filters,
       };
+
+      // Only include dates if filters are explicitly applied
+      if (!isFilterApplied) {
+        delete params.startDate;
+        delete params.endDate;
+      }
+
+      // Clean up empty parameters
+      Object.keys(params).forEach(key => {
+        if (params[key] === '' || params[key] === null || params[key] === undefined) {
+          delete params[key];
+        }
+      });
 
       let res;
       if (activeTab === 'public') {
@@ -891,52 +906,22 @@ function VerifyRecords() {
   };
 
   const applyFilters = () => {
+    setIsFilterApplied(true);
     setPagination(prev => ({ ...prev, currentPage: 1 }));
-    fetchRecords();
   };
 
   const resetFilters = () => {
     setFilters({
-      startDate: '',
-      endDate: '',
+      startDate: today,
+      endDate: today,
       burialLocation: '',
       gender: '',
       applicantEmail: '',
       ageCategory: '',
       status: 'Pending'
     });
+    setIsFilterApplied(false);
     setPagination(prev => ({ ...prev, currentPage: 1 }));
-    // Use timeout to ensure state update before fetch (or define fetchRecords to use passed params)
-    // Here relying on effect dependency or manual call. 
-    // Since fetchRecords uses 'filters' state, we need to wait for state update.
-    // Better way: pass empty filters to fetchRecords, but our fetchRecords uses state.
-    // Simple workaround:
-    setTimeout(() => {
-      // Trigger fetch manually with cleared filters for this call, or rely on effect if we add filters to dep array?
-      // Current effect only watches pagination.currentPage.
-      // So detailed fetchRecords is needed or a helper.
-      // Let's just create a quick internal fetch with cleared params
-      setLoading(true);
-      apiService.getPublicRecords({
-        page: 1,
-        limit: 10,
-        status: 'Pending'
-      })
-        .then(res => {
-          if (res.data.success) {
-            setRecords(res.data.data || []);
-            const paging = res.data.pagination || {};
-            setPagination({
-              currentPage: 1,
-              totalPages: paging.totalPages || 1,
-              total: paging.total || 0
-            });
-          } else {
-            setRecords([]);
-          }
-        })
-        .finally(() => setLoading(false));
-    }, 0);
   };
 
   return (
@@ -951,6 +936,7 @@ function VerifyRecords() {
           className={activeTab === 'public' ? 'active' : ''}
           onClick={() => {
             setActiveTab('public');
+            setIsFilterApplied(false);
             setPagination({ currentPage: 1, totalPages: 1, total: 0 });
           }}
         >
@@ -961,6 +947,7 @@ function VerifyRecords() {
           className={activeTab === 'staff' ? 'active' : ''}
           onClick={() => {
             setActiveTab('staff');
+            setIsFilterApplied(false);
             setPagination({ currentPage: 1, totalPages: 1, total: 0 });
           }}
         >

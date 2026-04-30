@@ -360,24 +360,9 @@ function ModernDatePicker({ value, onChange, name, placeholder = "dd - mm - yyyy
   // Use today as default if no value is provided
   const selectedDate = value ? new Date(value) : new Date();
 
-  // Sync default value with parent on mount if value is missing
-  useEffect(() => {
-    if (!value && onChange && name) {
-      const today = new Date();
-      // Format as YYYY-MM-DD for consistency
-      const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const day = String(today.getDate()).padStart(2, '0');
-      const formattedDate = `${year}-${month}-${day}`;
-      
-      onChange({
-        target: {
-          name: name,
-          value: formattedDate
-        }
-      });
-    }
-  }, [value, onChange, name]);
+  // No longer auto-syncing today's date on mount to allow for empty/null dates
+  // if the parent component wants to start with no date selected.
+
 
   const handleChange = (date) => {
     if (onChange && name) {
