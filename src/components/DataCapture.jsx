@@ -1776,6 +1776,7 @@ function DataCapture() {
                 onChange={handleChange}
                 name="dateOfBurial"
                 placeholder="Pick date of burial"
+                maxDate={null}
                 required
                 aria-required="true"
               />
