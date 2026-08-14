@@ -583,12 +583,14 @@ export const StatusBadge = styled.span`
     if (props.$status === 'Verified') return 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)';
     if (props.$status === 'Pending') return 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)';
     if (props.$status === 'Rejected') return 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)';
+    if (props.$status === 'Void') return 'linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%)';
     return 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)';
   }};
   color: ${props => {
     if (props.$status === 'Verified') return theme.colors.success;
     if (props.$status === 'Pending') return theme.colors.warning;
     if (props.$status === 'Rejected') return theme.colors.danger;
+    if (props.$status === 'Void') return theme.colors.gray600;
     return theme.colors.warning;
   }};
   box-shadow: ${theme.shadows.sm};

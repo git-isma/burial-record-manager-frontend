@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import axios from '../utils/axios';
 import { apiService } from '../utils/api';
 import ismaLogo from '../assets/ISMA-logo.png';
@@ -153,6 +154,44 @@ const Form = styled.form`
   display: flex;
   flex-direction: column;
   gap: 20px;
+`;
+
+const PasswordInputContainer = styled.div`
+  position: relative;
+  display: flex;
+  width: 100%;
+
+  input {
+    width: 100%;
+    padding-right: 40px;
+    box-sizing: border-box;
+  }
+
+  .toggle-btn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+
+    &:hover {
+      color: #334155;
+    }
+
+    body.dark-theme & {
+      color: #6d6d6d;
+      &:hover {
+        color: #e5e5e5;
+      }
+    }
+  }
 `;
 
 const FormGroup = styled.div`
@@ -316,6 +355,7 @@ const InfoBox = styled.div`
 
 function Login({ onLogin }) {
   const [formData, setFormData] = useState({ email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -380,14 +420,24 @@ function Login({ onLogin }) {
 
           <FormGroup>
             <label>Password</label>
-            <input
-              type="password"
-              name="password"
-              placeholder="••••••••"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
+            <PasswordInputContainer>
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
+              <button
+                type="button"
+                className="toggle-btn"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+              </button>
+            </PasswordInputContainer>
           </FormGroup>
 
           <SubmitButton type="submit" disabled={loading}>
@@ -400,11 +450,11 @@ function Login({ onLogin }) {
           <Link to="/support">Support Contact</Link>
         </FooterLinks>
 
-        <InfoBox>
+        {/* <InfoBox>
           <strong>Default Credentials</strong>
           <p>Email: superadmin@isma.co.ke</p>
           <p>Password: admin123</p>
-        </InfoBox>
+        </InfoBox> */}
       </LoginCard>
       <div style={{ position: 'absolute', bottom: '20px', left: 0, width: '100%', textAlign: 'center', color: 'rgba(255,255,255,0.7)', fontSize: '12px', zIndex: 10 }}>
         © 2026 Islamia School & Mosque Association. All rights reserved.
