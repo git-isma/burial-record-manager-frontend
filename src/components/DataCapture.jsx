@@ -2579,6 +2579,17 @@ function DataCapture() {
                 />
                 <MdCancel size={18} /> Rejected
               </label>
+              <label htmlFor="statusVoid">
+                <input
+                  id="statusVoid"
+                  type="radio"
+                  name="status"
+                  value="Void"
+                  checked={formData.status === "Void"}
+                  onChange={handleChange}
+                />
+                <MdDelete size={18} /> Void
+              </label>
             </RadioGroup>
           </FormGroup>
 

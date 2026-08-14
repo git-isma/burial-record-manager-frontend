@@ -5,7 +5,7 @@ import styled from 'styled-components';
 import { PageHeader, Card, StatusBadge } from '../styles/CommonStyles';
 import { theme } from '../styles/theme';
 import ModernDatePicker from './ModernDatePicker';
-import { MdVisibility, MdEdit, MdDownload, MdDelete, MdSchedule, MdCheckCircle, MdVerified, MdCancel } from 'react-icons/md';
+import { MdVisibility, MdEdit, MdDownload, MdDelete, MdSchedule, MdCheckCircle, MdVerified, MdCancel, MdBlock } from 'react-icons/md';
 import { ConfirmModal } from './Modal';
 import { useToast } from '../contexts/ToastContext';
 import { useSettings } from '../contexts/SettingsContext';
@@ -471,6 +471,7 @@ function Records({ user }) {
   const [loading, setLoading] = useState(false);
   const [selectedRecords, setSelectedRecords] = useState([]);
   const [bulkDeleteModal, setBulkDeleteModal] = useState({ isOpen: false });
+  const [voidModal, setVoidModal] = useState({ isOpen: false, recordId: null, recordName: '' });
 
   useEffect(() => {
     fetchRecords();
@@ -582,6 +583,25 @@ function Records({ user }) {
     }
   };
 
+  const handleVoidClick = (record) => {
+    setVoidModal({
+      isOpen: true,
+      recordId: record._id,
+      recordName: `${record.firstName} ${record.lastName}`
+    });
+  };
+
+  const confirmVoid = async () => {
+    try {
+      await apiService.updateRecord(voidModal.recordId, { status: 'Void' });
+      showToast('Record voided successfully', 'success');
+      setVoidModal({ isOpen: false, recordId: null, recordName: '' });
+      fetchRecords(); // Refresh list
+    } catch (err) {
+      showToast(err.response?.data?.msg || 'Error voiding record', 'error');
+    }
+  };
+
   return (
     <RecordsContainer>
       <PageHeader>
@@ -635,6 +655,7 @@ function Records({ user }) {
               <option value="Pending">Verification Pending</option>
               <option value="Verified">Verified</option>
               <option value="Rejected">Rejected</option>
+              <option value="Void">Void</option>
             </select>
           </FormGroup>
           <SearchGroup>
@@ -731,11 +752,17 @@ function Records({ user }) {
                           {record.status === 'Pending' && <MdSchedule size={16} style={{ marginRight: '6px' }} />}
                           {record.status === 'Verified' && <MdVerified size={16} style={{ marginRight: '6px' }} />}
                           {record.status === 'Rejected' && <MdCancel size={16} style={{ marginRight: '6px' }} />}
+                          {record.status === 'Void' && <MdBlock size={16} style={{ marginRight: '6px' }} />}
                           {record.status === 'Pending' ? 'Verification Pending' : record.status}
                         </StatusBadge>
                       </td>
                       <td data-label="Actions">
                         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                          {user?.role === 'admin' && record.status !== 'Void' && (
+                            <ActionButton title="Void Record" onClick={() => handleVoidClick(record)} style={{ color: theme.colors.danger }}>
+                              <MdBlock size={18} />
+                            </ActionButton>
+                          )}
                           <ActionButton title="View Details" onClick={() => handleView(record._id)}>
                             <MdVisibility size={18} />
                           </ActionButton>
@@ -778,6 +805,18 @@ function Records({ user }) {
         title="Delete Multiple Records"
         message={`Are you sure you want to delete ${selectedRecords.length} record(s)? This action cannot be undone.`}
         confirmText="Delete All"
+        cancelText="Cancel"
+        variant="danger"
+      />
+
+      {/* Void Confirmation Modal */}
+      <ConfirmModal
+        isOpen={voidModal.isOpen}
+        onClose={() => setVoidModal({ isOpen: false, recordId: null, recordName: '' })}
+        onConfirm={confirmVoid}
+        title="Void Record"
+        message={`Are you sure you want to void the record for ${voidModal.recordName}? This will mark it as voided but keep it in the system.`}
+        confirmText="Void Record"
         cancelText="Cancel"
         variant="danger"
       />

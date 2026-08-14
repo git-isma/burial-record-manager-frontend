@@ -774,13 +774,17 @@ function VerifyRecords() {
   const handleVerifyClick = async (record) => {
     setProcessing(true);
     try {
-      const [recordRes, receiptRes] = await Promise.all([
-        apiService.getLatestRecordNumber(),
-        apiService.getLatestReceiptNumber()
-      ]);
+      let nextRecNum = record.recordNumber;
+      let nextReceiptNum = record.receiptNo;
 
-      const nextRecNum = recordRes.data.recordNumber;
-      const nextReceiptNum = receiptRes.data.receiptNo;
+      if (activeTab === 'public') {
+        const [recordRes, receiptRes] = await Promise.all([
+          apiService.getLatestRecordNumber(),
+          apiService.getLatestReceiptNumber()
+        ]);
+        nextRecNum = recordRes.data.recordNumber;
+        nextReceiptNum = receiptRes.data.receiptNo;
+      }
 
       setNextNumbers({ recordNumber: nextRecNum, receiptNo: nextReceiptNum });
       setVerifyModal({
